@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FeedGrid } from "@/components/listings/FeedGrid";
 import { getFeedListings } from "@/lib/listings";
 import { DEMO_USER_ID } from "@/lib/demo-user";
@@ -15,9 +16,23 @@ export default async function Home() {
           <h1 className="text-xl font-semibold tracking-tight text-black dark:text-zinc-50">
             MarketFetch
           </h1>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            {listings.length} listings
-          </span>
+          <nav className="flex items-baseline gap-4 text-sm">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {listings.length} listings
+            </span>
+            <Link
+              href="/preferences"
+              className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Preferences
+            </Link>
+            <Link
+              href="/chat"
+              className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Chat
+            </Link>
+          </nav>
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">

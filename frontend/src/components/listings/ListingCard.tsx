@@ -40,7 +40,7 @@ export function ListingCard({
       <Link
         href={`/listings/${item.id}`}
         aria-label={item.title}
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-[1]"
       />
       <div className="relative flex aspect-square items-center justify-center bg-zinc-100 text-6xl dark:bg-zinc-900">
         {/* Images land with Dev B's ingestion pipeline; emoji placeholder until then. */}

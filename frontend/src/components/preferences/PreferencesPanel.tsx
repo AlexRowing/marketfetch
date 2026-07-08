@@ -1,0 +1,194 @@
+"use client";
+
+import { useState } from "react";
+import type { Preference } from "@/lib/preferences";
+import type { PreferenceKind } from "@/types";
+
+const SECTIONS: { kind: PreferenceKind; title: string; hint: string }[] = [
+  { kind: "brand", title: "Brands", hint: "e.g. Carhartt" },
+  { kind: "size", title: "Sizes", hint: "e.g. M, 42, W32 L32" },
+  { kind: "color", title: "Colors", hint: "e.g. black" },
+  { kind: "category_budget", title: "Budgets", hint: "category" },
+];
+
+async function postPreference(
+  kind: PreferenceKind,
+  value: string,
+  numericValue: number | null
+): Promise<string> {
+  const res = await fetch("/api/preferences", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, value, numericValue }),
+  });
+  if (!res.ok) throw new Error(`add failed: ${res.status}`);
+  const data = await res.json();
+  return data.id;
+}
+
+async function deletePreference(id: string) {
+  const res = await fetch("/api/preferences", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+}
+
+function Chip({ pref, onRemove }: { pref: Preference; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-1 pl-3 pr-1.5 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+      {pref.value}
+      {pref.numericValue !== null && (
+        <span className="text-zinc-500 dark:text-zinc-400">
+          €{pref.numericValue}
+        </span>
+      )}
+      {pref.source === "inferred" && (
+        <span
+          title="Learned by the agent"
+          className="text-xs text-zinc-400 dark:text-zinc-500"
+        >
+          ✨
+        </span>
+      )}
+      <button
+        type="button"
+        aria-label={`Remove ${pref.value}`}
+        onClick={onRemove}
+        className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+      >
+        ✕
+      </button>
+    </span>
+  );
+}
+
+function Section({
+  kind,
+  title,
+  hint,
+  prefs,
+  onAdd,
+  onRemove,
+}: {
+  kind: PreferenceKind;
+  title: string;
+  hint: string;
+  prefs: Preference[];
+  onAdd: (kind: PreferenceKind, value: string, numericValue: number | null) => void;
+  onRemove: (pref: Preference) => void;
+}) {
+  const [value, setValue] = useState("");
+  const [amount, setAmount] = useState("");
+  const isBudget = kind === "category_budget";
+
+  const submit = () => {
+    const v = value.trim();
+    if (!v) return;
+    const n = isBudget ? Number(amount) : null;
+    if (isBudget && (!amount || Number.isNaN(n) || n! <= 0)) return;
+    onAdd(kind, v, n);
+    setValue("");
+    setAmount("");
+  };
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        {title}
+      </h2>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {prefs.length === 0 && (
+          <p className="text-sm text-zinc-400 dark:text-zinc-500">
+            Nothing yet.
+          </p>
+        )}
+        {prefs.map((p) => (
+          <Chip key={p.id} pref={p} onRemove={() => onRemove(p)} />
+        ))}
+      </div>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={hint}
+          aria-label={`Add ${title.toLowerCase()}`}
+          className="w-40 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        />
+        {isBudget && (
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="€ max"
+            inputMode="decimal"
+            aria-label="Budget amount"
+            className="w-20 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+        )}
+        <button
+          type="submit"
+          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          Add
+        </button>
+      </form>
+    </section>
+  );
+}
+
+export function PreferencesPanel({ initial }: { initial: Preference[] }) {
+  const [prefs, setPrefs] = useState(initial);
+
+  const add = (
+    kind: PreferenceKind,
+    value: string,
+    numericValue: number | null
+  ) => {
+    const tempId = `tmp-${Date.now()}`;
+    const optimistic: Preference = {
+      id: tempId,
+      kind,
+      value,
+      numericValue,
+      source: "explicit",
+    };
+    setPrefs((list) => [...list, optimistic]);
+    postPreference(kind, value, numericValue)
+      .then((id) =>
+        setPrefs((list) =>
+          list.map((p) => (p.id === tempId ? { ...p, id } : p))
+        )
+      )
+      .catch(() =>
+        setPrefs((list) => list.filter((p) => p.id !== tempId))
+      );
+  };
+
+  const remove = (pref: Preference) => {
+    setPrefs((list) => list.filter((p) => p.id !== pref.id));
+    deletePreference(pref.id).catch(() =>
+      setPrefs((list) => [...list, pref])
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {SECTIONS.map((s) => (
+        <Section
+          key={s.kind}
+          {...s}
+          prefs={prefs.filter((p) => p.kind === s.kind)}
+          onAdd={add}
+          onRemove={remove}
+        />
+      ))}
+    </div>
+  );
+}
