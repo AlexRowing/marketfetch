@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { FeedItem } from "@/lib/listings";
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -35,7 +36,12 @@ export function ListingCard({
       : null;
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+      <Link
+        href={`/listings/${item.id}`}
+        aria-label={item.title}
+        className="absolute inset-0 z-0"
+      />
       <div className="relative flex aspect-square items-center justify-center bg-zinc-100 text-6xl dark:bg-zinc-900">
         {/* Images land with Dev B's ingestion pipeline; emoji placeholder until then. */}
         <span aria-hidden>{CATEGORY_EMOJI[item.category] ?? "🛍️"}</span>
@@ -44,7 +50,7 @@ export function ListingCard({
             ↓ {dropPct}% since listed
           </span>
         )}
-        <div className="absolute right-2 top-2 flex gap-1.5">
+        <div className="absolute right-2 top-2 z-10 flex gap-1.5">
           <button
             type="button"
             aria-label={item.isSaved ? "Unsave" : "Save"}

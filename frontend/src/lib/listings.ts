@@ -35,6 +35,103 @@ interface FeedRow {
   save_state: string | null;
 }
 
+export interface PricePoint {
+  price: number;
+  capturedAt: string;
+}
+
+/** Full listing plus Price Memory context for the detail page. */
+export interface ListingDetail extends FeedItem {
+  description: string;
+  url: string | null;
+  /** Avg snapshot price over comparable listings (category+brand), last 60d. */
+  marketAvg60d: number | null;
+  /** current price vs market avg. Negative = below market (a deal). */
+  deltaVsMarket: number | null;
+  priceHistory: PricePoint[];
+}
+
+export async function getListingDetail(
+  listingId: string,
+  userId: string
+): Promise<ListingDetail | null> {
+  const [listingRows, historyRows, marketRows] = await Promise.all([
+    query<FeedRow & { description: string; url: string | null }>(
+      `SELECT l.id, l.title, l.description, l.url,
+              l.brand, l.category, l.size, l.color, l.condition,
+              l.image_url, l.current_price, l.currency,
+              extract(day FROM now() - l.first_seen_at)::INT AS listing_age_days,
+              fp.first_price,
+              ss.save_state
+       FROM listings l
+       LEFT JOIN LATERAL (
+         SELECT price AS first_price FROM price_snapshots
+         WHERE listing_id = l.id ORDER BY captured_at ASC LIMIT 1
+       ) fp ON true
+       LEFT JOIN LATERAL (
+         SELECT kind AS save_state FROM interactions
+         WHERE user_id = $2 AND listing_id = l.id AND kind IN ('save', 'unsave')
+         ORDER BY created_at DESC LIMIT 1
+       ) ss ON true
+       WHERE l.id = $1`,
+      [listingId, userId]
+    ),
+    query<{ price: string; captured_at: string }>(
+      `SELECT price, captured_at FROM price_snapshots
+       WHERE listing_id = $1 ORDER BY captured_at ASC`,
+      [listingId]
+    ),
+    query<{ market_avg: string | null }>(
+      `SELECT avg(ps.price) AS market_avg
+       FROM listings l
+       JOIN listings comp ON comp.category = l.category
+                         AND comp.brand IS NOT DISTINCT FROM l.brand
+       JOIN price_snapshots ps ON ps.listing_id = comp.id
+                              AND ps.captured_at > now() - INTERVAL '60 days'
+       WHERE l.id = $1`,
+      [listingId]
+    ),
+  ]);
+
+  const r = listingRows[0];
+  if (!r) return null;
+
+  const currentPrice = Number(r.current_price);
+  const firstPrice = r.first_price === null ? null : Number(r.first_price);
+  const marketAvg60d =
+    marketRows[0]?.market_avg == null ? null : Number(marketRows[0].market_avg);
+
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    url: r.url,
+    brand: r.brand,
+    category: r.category,
+    size: r.size,
+    color: r.color,
+    condition: r.condition,
+    imageUrl: r.image_url,
+    currentPrice,
+    currency: r.currency,
+    listingAgeDays: Number(r.listing_age_days),
+    priceChangePct:
+      firstPrice && firstPrice > 0
+        ? (currentPrice - firstPrice) / firstPrice
+        : null,
+    isSaved: r.save_state === "save",
+    marketAvg60d,
+    deltaVsMarket:
+      marketAvg60d && marketAvg60d > 0
+        ? (currentPrice - marketAvg60d) / marketAvg60d
+        : null,
+    priceHistory: historyRows.map((h) => ({
+      price: Number(h.price),
+      capturedAt: h.captured_at,
+    })),
+  };
+}
+
 /**
  * Feed for one user: active listings they haven't rejected, with price-drop
  * context and their current saved state.
