@@ -6,7 +6,8 @@
   "description": "MarketFetch agent worker: embeddings, price snapshots, Bedrock+MCP agent loop",
   "scripts": {
     "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
-    "taste:recompute": "tsx src/embeddings/recompute-taste.ts"
+    "taste:recompute": "tsx src/embeddings/recompute-taste.ts",
+    "prices:snapshot": "tsx src/pricing/snapshot.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.700.0",
