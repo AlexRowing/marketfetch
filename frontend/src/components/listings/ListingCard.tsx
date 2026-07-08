@@ -1,3 +1,5 @@
+"use client";
+
 import type { FeedItem } from "@/lib/listings";
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -18,7 +20,15 @@ function formatPrice(amount: number, currency: string) {
   }).format(amount);
 }
 
-export function ListingCard({ item }: { item: FeedItem }) {
+export function ListingCard({
+  item,
+  onToggleSave,
+  onReject,
+}: {
+  item: FeedItem;
+  onToggleSave: (item: FeedItem) => void;
+  onReject: (item: FeedItem) => void;
+}) {
   const dropPct =
     item.priceChangePct !== null && item.priceChangePct < -0.01
       ? Math.round(Math.abs(item.priceChangePct) * 100)
@@ -34,6 +44,26 @@ export function ListingCard({ item }: { item: FeedItem }) {
             ↓ {dropPct}% since listed
           </span>
         )}
+        <div className="absolute right-2 top-2 flex gap-1.5">
+          <button
+            type="button"
+            aria-label={item.isSaved ? "Unsave" : "Save"}
+            title={item.isSaved ? "Unsave" : "Save"}
+            onClick={() => onToggleSave(item)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-base shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90"
+          >
+            {item.isSaved ? "❤️" : "🤍"}
+          </button>
+          <button
+            type="button"
+            aria-label="Not interested"
+            title="Not interested"
+            onClick={() => onReject(item)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm text-zinc-500 shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90 dark:text-zinc-300"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h2 className="line-clamp-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
