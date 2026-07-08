@@ -1,8 +1,8 @@
 -- MarketFetch initial schema (CockroachDB)
--- DRAFT — mirrors docs/database-schema.md. Not applied anywhere yet.
+-- Mirrors docs/database-schema.md. Idempotent: safe to re-run.
 -- VECTOR(1024) matches Amazon Titan Text Embeddings V2.
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email        STRING NOT NULL UNIQUE,
     display_name STRING NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE users (
 
 -- Buyer Memory (structured): one row per individual preference so the
 -- agent can add/remove them independently.
-CREATE TABLE user_preferences (
+CREATE TABLE IF NOT EXISTS user_preferences (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       UUID NOT NULL REFERENCES users (id),
     kind          STRING NOT NULL,            -- brand | size | color | category_budget
@@ -24,13 +24,13 @@ CREATE TABLE user_preferences (
 
 -- Buyer Memory (vector): one live taste profile per user, recomputed
 -- from saved/viewed listing embeddings after interactions.
-CREATE TABLE user_taste_embeddings (
+CREATE TABLE IF NOT EXISTS user_taste_embeddings (
     user_id    UUID PRIMARY KEY REFERENCES users (id),
     embedding  VECTOR(1024) NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE listings (
+CREATE TABLE IF NOT EXISTS listings (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source        STRING NOT NULL,            -- vinted | ebay | seed | ...
     external_id   STRING NOT NULL,
@@ -52,11 +52,8 @@ CREATE TABLE listings (
     UNIQUE (source, external_id)
 );
 
--- CockroachDB vector index for taste-similarity feed ranking.
-CREATE VECTOR INDEX listings_embedding_idx ON listings (embedding);
-
 -- Price Memory: append-only snapshots written by the backend worker.
-CREATE TABLE price_snapshots (
+CREATE TABLE IF NOT EXISTS price_snapshots (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     listing_id  UUID NOT NULL REFERENCES listings (id),
     price       DECIMAL(10,2) NOT NULL,
@@ -66,7 +63,7 @@ CREATE TABLE price_snapshots (
 );
 
 -- Raw interaction event log — the signal Buyer Memory learns from.
-CREATE TABLE interactions (
+CREATE TABLE IF NOT EXISTS interactions (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id    UUID NOT NULL REFERENCES users (id),
     listing_id UUID NOT NULL REFERENCES listings (id),
@@ -74,3 +71,9 @@ CREATE TABLE interactions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     INDEX interactions_user_kind_time_idx (user_id, kind, created_at DESC)
 );
+
+-- CockroachDB vector index for taste-similarity feed ranking.
+-- Kept last: requires a recent cluster version (v25.2+); if this statement
+-- fails, all tables above are still created and the app works without
+-- vector search until the cluster is upgraded.
+CREATE VECTOR INDEX IF NOT EXISTS listings_embedding_idx ON listings (embedding);
