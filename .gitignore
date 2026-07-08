@@ -1,0 +1,13 @@
+# dependencies / builds (frontend has its own .gitignore too)
+node_modules/
+.next/
+dist/
+
+# environment — never commit credentials
+.env
+.env.*
+!.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
