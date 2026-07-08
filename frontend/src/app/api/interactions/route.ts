@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { DEMO_USER_ID } from "@/lib/demo-user";
+import { recomputeTasteEmbedding } from "@/lib/taste";
 import type { InteractionKind } from "@/types";
 
 const KINDS: InteractionKind[] = ["view", "save", "reject", "unsave"];
@@ -27,6 +28,11 @@ export async function POST(request: Request) {
        VALUES ($1, $2, $3)
        RETURNING id`,
       [DEMO_USER_ID, listingId, kind]
+    );
+    // Synchronous per docs/database-schema.md open decision #2. If this
+    // gets slow with more listings, move it to the backend worker.
+    await recomputeTasteEmbedding(DEMO_USER_ID).catch((err) =>
+      console.error("taste recompute failed:", err)
     );
     return NextResponse.json({ id: rows[0].id }, { status: 201 });
   } catch {
