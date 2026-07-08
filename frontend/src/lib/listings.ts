@@ -135,6 +135,11 @@ export async function getListingDetail(
 /**
  * Feed for one user: active listings they haven't rejected, with price-drop
  * context and their current saved state.
+ *
+ * Ranking: cosine distance between the listing embedding and the user's
+ * taste embedding (Buyer Memory, vector half). Listings without an
+ * embedding — or a user without a taste profile yet — get a NULL distance
+ * and fall back to newest-first via NULLS LAST.
  */
 export async function getFeedListings(userId: string): Promise<FeedItem[]> {
   const rows = await query<FeedRow>(
@@ -142,8 +147,10 @@ export async function getFeedListings(userId: string): Promise<FeedItem[]> {
             l.image_url, l.current_price, l.currency,
             extract(day FROM now() - l.first_seen_at)::INT AS listing_age_days,
             fp.first_price,
-            ss.save_state
+            ss.save_state,
+            (l.embedding <=> t.embedding) AS taste_distance
      FROM listings l
+     LEFT JOIN user_taste_embeddings t ON t.user_id = $1
      LEFT JOIN LATERAL (
        SELECT price AS first_price
        FROM price_snapshots
@@ -163,7 +170,8 @@ export async function getFeedListings(userId: string): Promise<FeedItem[]> {
          SELECT 1 FROM interactions r
          WHERE r.user_id = $1 AND r.listing_id = l.id AND r.kind = 'reject'
        )
-     ORDER BY l.first_seen_at DESC`,
+     ORDER BY taste_distance ASC NULLS LAST, l.first_seen_at DESC
+     LIMIT 60`,
     [userId]
   );
 
