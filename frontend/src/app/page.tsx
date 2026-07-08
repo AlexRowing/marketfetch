@@ -1,11 +1,12 @@
-import { ListingCard } from "@/components/listings/ListingCard";
+import { FeedGrid } from "@/components/listings/FeedGrid";
 import { getFeedListings } from "@/lib/listings";
+import { DEMO_USER_ID } from "@/lib/demo-user";
 
 // The feed reads live data from CockroachDB on every request.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const listings = await getFeedListings();
+  const listings = await getFeedListings(DEMO_USER_ID);
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
@@ -20,18 +21,7 @@ export default async function Home() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        {listings.length === 0 ? (
-          <p className="text-zinc-500 dark:text-zinc-400">
-            No listings yet — run <code>npm run db:seed</code> to load sample
-            data.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {listings.map((item) => (
-              <ListingCard key={item.id} item={item} />
-            ))}
-          </div>
-        )}
+        <FeedGrid initialItems={listings} />
       </main>
     </div>
   );
