@@ -1,0 +1,22 @@
+{
+  "name": "marketfetch-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MarketFetch agent worker: embeddings, price snapshots, Bedrock+MCP agent loop",
+  "scripts": {
+    "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
+    "taste:recompute": "tsx src/embeddings/recompute-taste.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.700.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}
