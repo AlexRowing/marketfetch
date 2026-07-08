@@ -1,27 +1,37 @@
-export default function Home() {
+import { ListingCard } from "@/components/listings/ListingCard";
+import { getFeedListings } from "@/lib/listings";
+
+// The feed reads live data from CockroachDB on every request.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const listings = await getFeedListings();
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-8 font-sans dark:bg-black">
-      <main className="flex w-full max-w-2xl flex-col items-start gap-6">
-        <span className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          Foundation build
-        </span>
-        <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          MarketFetch
-        </h1>
-        <p className="text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-          An AI buying agent for second-hand marketplaces. It remembers what
-          you like (Buyer Memory) and what things should cost (Price Memory),
-          then finds you the deals worth acting on.
-        </p>
-        <ul className="flex flex-col gap-2 text-base text-zinc-600 dark:text-zinc-400">
-          <li>🧠 Buyer Memory — preferences, sizes, budgets, saved items</li>
-          <li>📉 Price Memory — price history, listing age, market averages</li>
-          <li>🤖 Agent chat — grounded in CockroachDB via MCP</li>
-        </ul>
-        <p className="text-sm text-zinc-400 dark:text-zinc-500">
-          Feed, listing detail, preferences, and chat pages land here next —
-          see docs/product-spec.md for the plan.
-        </p>
+    <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
+      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto flex w-full max-w-5xl items-baseline justify-between">
+          <h1 className="text-xl font-semibold tracking-tight text-black dark:text-zinc-50">
+            MarketFetch
+          </h1>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            {listings.length} listings
+          </span>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+        {listings.length === 0 ? (
+          <p className="text-zinc-500 dark:text-zinc-400">
+            No listings yet — run <code>npm run db:seed</code> to load sample
+            data.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {listings.map((item) => (
+              <ListingCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
