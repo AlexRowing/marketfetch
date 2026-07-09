@@ -24,11 +24,13 @@
   --color-brand-700: #4338ca;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Class-based dark mode: the ThemeToggle sets .dark on <html> (persisted in
+   localStorage, defaulting to the OS preference via the layout's init script). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {

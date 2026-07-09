@@ -2,17 +2,9 @@
 
 import Link from "next/link";
 import { formatSource } from "@/lib/format";
+import { ListingImage } from "@/components/listings/ListingImage";
+import { SourceBadge } from "@/components/listings/SourceBadge";
 import type { FeedItem } from "@/lib/listings";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  jackets: "🧥",
-  jeans: "👖",
-  sneakers: "👟",
-  shoes: "🥾",
-  fleeces: "🧸",
-  accessories: "🧢",
-  shirts: "👔",
-};
 
 function formatPrice(amount: number, currency: string) {
   return new Intl.NumberFormat("en-IE", {
@@ -45,22 +37,20 @@ export function ListingCard({
         aria-label={item.title}
         className="absolute inset-0 z-[1]"
       />
-      <div className="relative flex aspect-square items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 text-6xl dark:from-zinc-900 dark:to-zinc-950">
-        {/* Images land with Dev B's ingestion pipeline; emoji placeholder until then. */}
-        <span
-          aria-hidden
-          className="transition-transform duration-300 group-hover:scale-110"
-        >
-          {CATEGORY_EMOJI[item.category] ?? "🛍️"}
-        </span>
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-linear-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
+        <ListingImage
+          imageUrl={item.imageUrl}
+          category={item.category}
+          alt={item.title}
+        />
         {dropPct !== null && (
           <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white shadow-sm">
             ↓ {dropPct}%
           </span>
         )}
         {showSource && (
-          <span className="absolute bottom-2 left-2 rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-medium text-zinc-600 backdrop-blur-sm dark:bg-black/60 dark:text-zinc-300">
-            {formatSource(item.source)}
+          <span className="absolute bottom-2 left-2">
+            <SourceBadge source={item.source} />
           </span>
         )}
         <div className="absolute right-2 top-2 z-10 flex gap-1.5">

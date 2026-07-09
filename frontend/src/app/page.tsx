@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FeedGrid } from "@/components/listings/FeedGrid";
-import { BrandMark } from "@/components/ui/BrandMark";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getFeedListings } from "@/lib/listings";
 import { DEMO_USER_ID } from "@/lib/demo-user";
 
@@ -12,22 +12,19 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3.5">
-          <BrandMark />
-          <nav className="flex items-center gap-3 text-sm">
-            <span className="hidden rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 sm:inline-block dark:bg-zinc-900 dark:text-zinc-400">
-              {listings.length} listings
-            </span>
-            <Link
-              href="/preferences"
-              className="font-medium text-zinc-600 transition-colors hover:text-brand-600 dark:text-zinc-300 dark:hover:text-brand-400"
-            >
-              Preferences
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <PageHeader maxWidth="max-w-5xl">
+        <nav className="flex items-center gap-3 text-sm">
+          <span className="hidden rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 sm:inline-block dark:bg-zinc-900 dark:text-zinc-400">
+            {listings.length} listings
+          </span>
+          <Link
+            href="/preferences"
+            className="font-medium text-zinc-600 transition-colors hover:text-brand-600 dark:text-zinc-300 dark:hover:text-brand-400"
+          >
+            Preferences
+          </Link>
+        </nav>
+      </PageHeader>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">

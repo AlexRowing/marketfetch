@@ -23,8 +23,8 @@ function formatDate(iso: string) {
 }
 
 /**
- * Single-series price line. Slot-1 blue (#2a78d6 light / #3987e5 dark),
- * validated on both surfaces; 2px line, 8px markers with a surface ring,
+ * Single-series price line in the brand accent (brand-600 light / brand-400
+ * dark), matching the app's indigo; 2px line, 8px markers with a surface ring,
  * per-point hover tooltip, direct label on the latest price only.
  */
 export function PriceHistoryChart({
@@ -72,7 +72,7 @@ export function PriceHistoryChart({
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full text-[#2a78d6] dark:text-[#3987e5]"
+          className="w-full text-brand-600 dark:text-brand-400"
           role="img"
           aria-label={`Price history: ${points.length} snapshots from ${formatPrice(points[0].price, currency)} to ${formatPrice(points[last].price, currency)}`}
         >

@@ -1,6 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PriceHistoryChart } from "@/components/listings/PriceHistoryChart";
+import { ListingImage } from "@/components/listings/ListingImage";
+import { SourceBadgeLarge } from "@/components/listings/SourceBadge";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getListingDetail } from "@/lib/listings";
 import { formatSource } from "@/lib/format";
 import { query } from "@/lib/db";
@@ -32,35 +34,56 @@ export default async function ListingPage({
     [DEMO_USER_ID, listing.id]
   ).catch(() => {});
 
+  // Vs. market (the deal verdict) and change since first listed. Both negative =
+  // cheaper, the signals the product is built to surface.
   const deal =
     listing.deltaVsMarket !== null
       ? Math.round(listing.deltaVsMarket * 100)
       : null;
+  const sinceListed =
+    listing.priceChangePct !== null
+      ? Math.round(listing.priceChangePct * 100)
+      : null;
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto flex w-full max-w-3xl items-baseline justify-between">
-          <Link
-            href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+      <PageHeader>
+        {listing.isSaved && (
+          <span
+            title="Saved"
+            className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 dark:text-zinc-500"
           >
-            ← Feed
-          </Link>
-          {listing.isSaved && <span title="Saved">❤️ saved</span>}
-        </div>
-      </header>
+            ❤️ Saved
+          </span>
+        )}
+      </PageHeader>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-8">
+        {/* Hero photo — only once ingestion provides a real image URL. */}
+        {listing.imageUrl && (
+          <div className="group relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-linear-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950">
+            <ListingImage
+              imageUrl={listing.imageUrl}
+              category={listing.category}
+              alt={listing.title}
+            />
+          </div>
+        )}
+
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
             {listing.title}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {[listing.brand, listing.size, listing.color, listing.condition]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {listing.source !== "seed" && (
+              <SourceBadgeLarge source={listing.source} />
+            )}
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {[listing.brand, listing.size, listing.color, listing.condition]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
           {listing.url && (
             <a
               href={listing.url}
@@ -74,47 +97,74 @@ export default async function ListingPage({
           )}
         </div>
 
-        {/* Price Memory panel */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Price</p>
-            <p className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+        {/* Price Memory — lead with the current price and the deal verdict. */}
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-xs font-medium uppercase tracking-wide text-brand-600 dark:text-brand-400">
+            Price Memory
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               {formatPrice(listing.currentPrice, listing.currency)}
-            </p>
+            </span>
+            {deal !== null && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${
+                  deal < 0
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                    : deal > 0
+                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                }`}
+              >
+                {deal < 0
+                  ? `↓ ${-deal}% below market`
+                  : deal > 0
+                    ? `↑ ${deal}% above market`
+                    : "at market price"}
+              </span>
+            )}
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Market avg (60d)
-            </p>
-            <p className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-              {listing.marketAvg60d !== null
-                ? formatPrice(listing.marketAvg60d, listing.currency)
-                : "—"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Vs. market
-            </p>
-            <p
-              className={`mt-1 text-xl font-semibold ${
-                deal !== null && deal < 0
-                  ? "text-[#006300] dark:text-[#0ca30c]"
-                  : "text-zinc-900 dark:text-zinc-50"
-              }`}
-            >
-              {deal === null ? "—" : deal < 0 ? `↓ ${-deal}% below` : `↑ ${deal}% above`}
-            </p>
-          </div>
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Listed</p>
-            <p className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-              {listing.listingAgeDays}d ago
-            </p>
-          </div>
+          <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-900">
+            <div>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">
+                Market avg (60d)
+              </dt>
+              <dd className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                {listing.marketAvg60d !== null
+                  ? formatPrice(listing.marketAvg60d, listing.currency)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">
+                Since listed
+              </dt>
+              <dd
+                className={`mt-0.5 text-base font-semibold ${
+                  sinceListed !== null && sinceListed < 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-zinc-900 dark:text-zinc-100"
+                }`}
+              >
+                {sinceListed === null
+                  ? "—"
+                  : sinceListed < 0
+                    ? `↓ ${-sinceListed}%`
+                    : sinceListed > 0
+                      ? `↑ ${sinceListed}%`
+                      : "no change"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">Listed</dt>
+              <dd className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                {listing.listingAgeDays}d ago
+              </dd>
+            </div>
+          </dl>
         </section>
 
-        <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
             Price history
           </h2>

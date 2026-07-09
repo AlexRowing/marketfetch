@@ -61,9 +61,33 @@ export function ChatWidget() {
         aria-label={open ? "Minimize chat" : "Chat with the agent"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-2xl text-white shadow-lg transition-transform hover:scale-105 dark:bg-zinc-100 dark:text-zinc-900"
+        className="flex h-13 w-13 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md shadow-zinc-900/20 transition-transform hover:scale-105 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-black/40"
       >
-        {open ? "⌄" : "💬"}
+        {open ? (
+          // chevron down (minimize)
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
+            <path
+              d="m6 10 6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : (
+          // chat bubble
+          <svg viewBox="0 0 24 24" className="h-5.5 w-5.5" fill="none" aria-hidden>
+            <path
+              d="M12 3.5c4.97 0 9 3.53 9 7.9 0 4.36-4.03 7.9-9 7.9-.94 0-1.85-.13-2.7-.36L5 20.5l.83-3.3C4.4 15.83 3 13.9 3 11.4c0-4.37 4.03-7.9 9-7.9Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+            />
+            <circle cx="8.5" cy="11.5" r="1" fill="currentColor" />
+            <circle cx="12" cy="11.5" r="1" fill="currentColor" />
+            <circle cx="15.5" cy="11.5" r="1" fill="currentColor" />
+          </svg>
+        )}
       </button>
     </div>
   );
