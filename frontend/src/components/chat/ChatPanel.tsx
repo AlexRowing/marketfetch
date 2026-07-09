@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Message {
   role: "user" | "agent";
@@ -11,16 +11,53 @@ interface Message {
   isError?: boolean;
 }
 
+const STORAGE_KEY = "marketfetch.chat";
+const GREETING: Message = {
+  role: "agent",
+  text: "Hi! Ask me about deals — I remember your preferences, saves, and the price history of every listing I've seen.",
+};
+
 export function ChatPanel() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "agent",
-      text: "Hi! Ask me about deals — I remember your preferences, saves, and the price history of every listing I've seen.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // Gate persistence until the saved conversation is restored, so the default
+  // greeting never clobbers real history in storage on first render.
+  const [hydrated, setHydrated] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Restore a saved conversation on mount (client-only — no SSR hydration mismatch).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch {
+      // ignore corrupt or unavailable storage
+    }
+    setHydrated(true);
+  }, []);
+
+  // Persist the conversation whenever it changes, after the initial restore.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore quota or unavailable storage
+    }
+  }, [messages, hydrated]);
+
+  const clearChat = () => {
+    setMessages([GREETING]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -70,6 +107,17 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-1 flex-col">
+      {messages.length > 1 && (
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={clearChat}
+            className="text-xs text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
+          >
+            Clear chat
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto py-4">
         {messages.map((m, i) => (
           <div
