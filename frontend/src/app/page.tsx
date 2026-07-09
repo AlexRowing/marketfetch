@@ -2,13 +2,18 @@ import Link from "next/link";
 import { FeedGrid } from "@/components/listings/FeedGrid";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getFeedListings } from "@/lib/listings";
+import { getPreferences } from "@/lib/preferences";
 import { DEMO_USER_ID } from "@/lib/demo-user";
 
 // The feed reads live data from CockroachDB on every request.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const listings = await getFeedListings(DEMO_USER_ID);
+  // Preferences ride along so search can rank results by Buyer Memory.
+  const [listings, preferences] = await Promise.all([
+    getFeedListings(DEMO_USER_ID),
+    getPreferences(DEMO_USER_ID),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
@@ -34,7 +39,7 @@ export default async function Home() {
             Deals ranked by your taste — the agent surfaces what&apos;s worth acting on.
           </p>
         </div>
-        <FeedGrid initialItems={listings} />
+        <FeedGrid initialItems={listings} preferences={preferences} />
       </main>
     </div>
   );

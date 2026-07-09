@@ -24,7 +24,15 @@ export function ChatPanel() {
   // Gate persistence until the saved conversation is restored, so the default
   // greeting never clobbers real history in storage on first render.
   const [hydrated, setHydrated] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Keep the newest message in view: on restore, on every new message, and
+  // when the thinking indicator appears. Scrolls the list itself (not
+  // scrollIntoView) so the surrounding page never jumps.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, busy, hydrated]);
 
   // Restore a saved conversation on mount (client-only — no SSR hydration mismatch).
   useEffect(() => {
@@ -108,14 +116,13 @@ export function ChatPanel() {
       ]);
     } finally {
       setBusy(false);
-      queueMicrotask(() =>
-        endRef.current?.scrollIntoView({ behavior: "smooth" })
-      );
     }
   };
 
   return (
-    <div className="flex flex-1 flex-col">
+    // min-h-0 lets this shrink inside a bounded container (the popup widget),
+    // so the message list scrolls and the input form stays pinned + visible.
+    <div className="flex min-h-0 flex-1 flex-col">
       {messages.length > 1 && (
         <div className="flex justify-end pt-2">
           <button
@@ -128,7 +135,10 @@ export function ChatPanel() {
           </button>
         </div>
       )}
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto py-4">
+      <div
+        ref={listRef}
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-4"
+      >
         {messages.map((m, i) => (
           <div
             key={i}
@@ -155,7 +165,6 @@ export function ChatPanel() {
             thinking…
           </div>
         )}
-        <div ref={endRef} />
       </div>
       <form
         className="flex gap-2 border-t border-zinc-200 py-4 dark:border-zinc-800"
