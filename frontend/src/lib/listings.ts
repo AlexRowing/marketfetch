@@ -10,6 +10,10 @@ export interface FeedItem {
   color: string | null;
   condition: string | null;
   imageUrl: string | null;
+  /** Marketplace the listing came from, e.g. "vinted". */
+  source: string;
+  /** Link to the original listing on the source marketplace. */
+  url: string | null;
   currentPrice: number;
   currency: string;
   listingAgeDays: number;
@@ -28,6 +32,8 @@ interface FeedRow {
   color: string | null;
   condition: string | null;
   image_url: string | null;
+  source: string;
+  url: string | null;
   current_price: string; // DECIMAL comes back as string from pg
   currency: string;
   listing_age_days: string;
@@ -43,7 +49,6 @@ export interface PricePoint {
 /** Full listing plus Price Memory context for the detail page. */
 export interface ListingDetail extends FeedItem {
   description: string;
-  url: string | null;
   /** Avg snapshot price over comparable listings (category+brand), last 60d. */
   marketAvg60d: number | null;
   /** current price vs market avg. Negative = below market (a deal). */
@@ -56,8 +61,8 @@ export async function getListingDetail(
   userId: string
 ): Promise<ListingDetail | null> {
   const [listingRows, historyRows, marketRows] = await Promise.all([
-    query<FeedRow & { description: string; url: string | null }>(
-      `SELECT l.id, l.title, l.description, l.url,
+    query<FeedRow & { description: string }>(
+      `SELECT l.id, l.title, l.description, l.url, l.source,
               l.brand, l.category, l.size, l.color, l.condition,
               l.image_url, l.current_price, l.currency,
               extract(day FROM now() - l.first_seen_at)::INT AS listing_age_days,
@@ -106,6 +111,7 @@ export async function getListingDetail(
     title: r.title,
     description: r.description,
     url: r.url,
+    source: r.source,
     brand: r.brand,
     category: r.category,
     size: r.size,
@@ -144,7 +150,7 @@ export async function getListingDetail(
 export async function getFeedListings(userId: string): Promise<FeedItem[]> {
   const rows = await query<FeedRow>(
     `SELECT l.id, l.title, l.brand, l.category, l.size, l.color, l.condition,
-            l.image_url, l.current_price, l.currency,
+            l.image_url, l.source, l.url, l.current_price, l.currency,
             extract(day FROM now() - l.first_seen_at)::INT AS listing_age_days,
             fp.first_price,
             ss.save_state,
@@ -187,6 +193,8 @@ export async function getFeedListings(userId: string): Promise<FeedItem[]> {
       color: r.color,
       condition: r.condition,
       imageUrl: r.image_url,
+      source: r.source,
+      url: r.url,
       currentPrice,
       currency: r.currency,
       listingAgeDays: Number(r.listing_age_days),

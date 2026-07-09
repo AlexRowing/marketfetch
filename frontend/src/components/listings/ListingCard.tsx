@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatSource } from "@/lib/format";
 import type { FeedItem } from "@/lib/listings";
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -34,20 +35,32 @@ export function ListingCard({
     item.priceChangePct !== null && item.priceChangePct < -0.01
       ? Math.round(Math.abs(item.priceChangePct) * 100)
       : null;
+  // "seed" is placeholder data — only badge a real marketplace source.
+  const showSource = item.source && item.source !== "seed";
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/5 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-700/60">
       <Link
         href={`/listings/${item.id}`}
         aria-label={item.title}
         className="absolute inset-0 z-[1]"
       />
-      <div className="relative flex aspect-square items-center justify-center bg-zinc-100 text-6xl dark:bg-zinc-900">
+      <div className="relative flex aspect-square items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 text-6xl dark:from-zinc-900 dark:to-zinc-950">
         {/* Images land with Dev B's ingestion pipeline; emoji placeholder until then. */}
-        <span aria-hidden>{CATEGORY_EMOJI[item.category] ?? "🛍️"}</span>
+        <span
+          aria-hidden
+          className="transition-transform duration-300 group-hover:scale-110"
+        >
+          {CATEGORY_EMOJI[item.category] ?? "🛍️"}
+        </span>
         {dropPct !== null && (
-          <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
-            ↓ {dropPct}% since listed
+          <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white shadow-sm">
+            ↓ {dropPct}%
+          </span>
+        )}
+        {showSource && (
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-medium text-zinc-600 backdrop-blur-sm dark:bg-black/60 dark:text-zinc-300">
+            {formatSource(item.source)}
           </span>
         )}
         <div className="absolute right-2 top-2 z-10 flex gap-1.5">
@@ -79,13 +92,25 @@ export function ListingCard({
           {[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}
         </p>
         <div className="mt-auto flex items-baseline justify-between pt-2">
-          <span className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+          <span className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatPrice(item.currentPrice, item.currency)}
           </span>
           <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            listed {item.listingAgeDays}d ago
+            {item.listingAgeDays}d ago
           </span>
         </div>
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            // Sits above the card's full-surface Link overlay (z-[1]).
+            className="relative z-10 mt-2 inline-flex items-center gap-1 self-start text-xs text-zinc-500 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            View on {formatSource(item.source)}
+            <span aria-hidden>↗</span>
+          </a>
+        )}
       </div>
     </article>
   );

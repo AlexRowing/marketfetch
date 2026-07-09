@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PriceHistoryChart } from "@/components/listings/PriceHistoryChart";
 import { getListingDetail } from "@/lib/listings";
+import { formatSource } from "@/lib/format";
 import { query } from "@/lib/db";
 import { DEMO_USER_ID } from "@/lib/demo-user";
 
@@ -60,6 +61,17 @@ export default async function ListingPage({
               .filter(Boolean)
               .join(" · ")}
           </p>
+          {listing.url && (
+            <a
+              href={listing.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            >
+              View on {formatSource(listing.source)}
+              <span aria-hidden>↗</span>
+            </a>
+          )}
         </div>
 
         {/* Price Memory panel */}

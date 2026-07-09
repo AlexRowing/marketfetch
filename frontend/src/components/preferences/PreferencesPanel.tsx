@@ -4,11 +4,48 @@ import { useState } from "react";
 import type { Preference } from "@/lib/preferences";
 import type { PreferenceKind } from "@/types";
 
-const SECTIONS: { kind: PreferenceKind; title: string; hint: string }[] = [
-  { kind: "brand", title: "Brands", hint: "e.g. Carhartt" },
-  { kind: "size", title: "Sizes", hint: "e.g. M, 42, W32 L32" },
-  { kind: "color", title: "Colors", hint: "e.g. black" },
-  { kind: "category_budget", title: "Budgets", hint: "category" },
+const SECTIONS: {
+  kind: PreferenceKind;
+  title: string;
+  hint: string;
+  /** Common values offered as one-click chips (budgets pre-fill the category). */
+  suggestions: string[];
+}[] = [
+  {
+    kind: "brand",
+    title: "Brands",
+    hint: "e.g. Carhartt",
+    suggestions: [
+      "Carhartt",
+      "Nike",
+      "Levi's",
+      "The North Face",
+      "Patagonia",
+      "Adidas",
+      "Dr. Martens",
+      "Uniqlo",
+      "New Balance",
+      "Ralph Lauren",
+    ],
+  },
+  {
+    kind: "size",
+    title: "Sizes",
+    hint: "e.g. M, 42, W32 L32",
+    suggestions: ["XS", "S", "M", "L", "XL", "W30", "W32", "W34", "41", "42", "43"],
+  },
+  {
+    kind: "color",
+    title: "Colors",
+    hint: "e.g. black",
+    suggestions: ["Black", "White", "Grey", "Navy", "Blue", "Green", "Brown", "Beige", "Cream"],
+  },
+  {
+    kind: "category_budget",
+    title: "Budgets",
+    hint: "category",
+    suggestions: ["Jackets", "Jeans", "Sneakers", "Shoes", "Fleeces", "Shirts", "Accessories"],
+  },
 ];
 
 async function postPreference(
@@ -68,6 +105,7 @@ function Section({
   kind,
   title,
   hint,
+  suggestions,
   prefs,
   onAdd,
   onRemove,
@@ -75,6 +113,7 @@ function Section({
   kind: PreferenceKind;
   title: string;
   hint: string;
+  suggestions: string[];
   prefs: Preference[];
   onAdd: (kind: PreferenceKind, value: string, numericValue: number | null) => void;
   onRemove: (pref: Preference) => void;
@@ -91,6 +130,17 @@ function Section({
     onAdd(kind, v, n);
     setValue("");
     setAmount("");
+  };
+
+  // Hide suggestions the user has already added (case-insensitive).
+  const taken = new Set(prefs.map((p) => p.value.toLowerCase()));
+  const openSuggestions = suggestions.filter((s) => !taken.has(s.toLowerCase()));
+
+  // A suggestion click adds directly — except budgets, which still need an
+  // amount, so it pre-fills the category input for the user to complete.
+  const pickSuggestion = (s: string) => {
+    if (isBudget) setValue(s);
+    else onAdd(kind, s, null);
   };
 
   return (
@@ -139,6 +189,26 @@ function Section({
           Add
         </button>
       </form>
+      {openSuggestions.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            {isBudget ? "Set budget for:" : "Suggestions:"}
+          </span>
+          {openSuggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => pickSuggestion(s)}
+              aria-label={
+                isBudget ? `Set budget for ${s}` : `Add ${s} to ${title.toLowerCase()}`
+              }
+              className="rounded-full border border-dashed border-zinc-300 px-2.5 py-1 text-xs text-zinc-500 transition-colors hover:border-solid hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -62,7 +62,9 @@ export function PriceHistoryChart({
     .map((p, i) => `${i === 0 ? "M" : "L"}${x(times[i]).toFixed(1)},${y(p.price).toFixed(1)}`)
     .join(" ");
 
-  const gridPrices = [minP, (minP + maxP) / 2, maxP];
+  // A flat price history (min === max) would make all three gridlines identical;
+  // collapse to one so we don't render duplicate values (and duplicate keys).
+  const gridPrices = minP === maxP ? [minP] : [minP, (minP + maxP) / 2, maxP];
   const last = points.length - 1;
 
   return (
@@ -75,8 +77,8 @@ export function PriceHistoryChart({
           aria-label={`Price history: ${points.length} snapshots from ${formatPrice(points[0].price, currency)} to ${formatPrice(points[last].price, currency)}`}
         >
           {/* recessive grid + tick labels */}
-          {gridPrices.map((gp) => (
-            <g key={gp}>
+          {gridPrices.map((gp, i) => (
+            <g key={i}>
               <line
                 x1={PAD.left}
                 x2={W - PAD.right}
