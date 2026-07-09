@@ -7,7 +7,8 @@
   "scripts": {
     "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
     "taste:recompute": "tsx src/embeddings/recompute-taste.ts",
-    "prices:snapshot": "tsx src/pricing/snapshot.ts"
+    "prices:snapshot": "tsx src/pricing/snapshot.ts",
+    "lambda:build": "esbuild src/lambda/snapshot-handler.ts --bundle --platform=node --target=node22 --format=cjs --external:pg-native --outfile=dist/lambda/index.js"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.700.0",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "esbuild": "^0.25.0",
     "@types/pg": "^8.20.0",
     "tsx": "^4.19.0",
     "typescript": "^5"
