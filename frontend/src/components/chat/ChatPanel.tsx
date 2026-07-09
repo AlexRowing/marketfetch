@@ -5,6 +5,10 @@ import { useRef, useState } from "react";
 interface Message {
   role: "user" | "agent";
   text: string;
+  /** Number of memory queries the agent ran to produce this reply. */
+  toolCallCount?: number;
+  /** Error placeholders are shown in the UI but kept out of agent history. */
+  isError?: boolean;
 }
 
 export function ChatPanel() {
@@ -23,22 +27,38 @@ export function ChatPanel() {
     if (!text || busy) return;
     setInput("");
     setBusy(true);
+    // Prior turns, in the {role, content} shape the agent expects.
+    const history = messages
+      .filter((m) => !m.isError)
+      .map((m) => ({
+        role: m.role === "agent" ? ("assistant" as const) : ("user" as const),
+        content: m.text,
+      }));
     setMessages((m) => [...m, { role: "user", text }]);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       });
       const data = await res.json();
       setMessages((m) => [
         ...m,
-        { role: "agent", text: res.ok ? data.reply : "Something went wrong — try again." },
+        {
+          role: "agent",
+          text: res.ok ? data.reply : "Something went wrong — try again.",
+          toolCallCount: res.ok ? (data.toolCalls?.length ?? 0) : undefined,
+          isError: !res.ok,
+        },
       ]);
     } catch {
       setMessages((m) => [
         ...m,
-        { role: "agent", text: "Couldn't reach the agent — try again." },
+        {
+          role: "agent",
+          text: "Couldn't reach the agent — try again.",
+          isError: true,
+        },
       ]);
     } finally {
       setBusy(false);
@@ -54,13 +74,22 @@ export function ChatPanel() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-6 ${
-              m.role === "user"
-                ? "self-end bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "self-start border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-            }`}
+            className={`max-w-[85%] ${m.role === "user" ? "self-end" : "self-start"}`}
           >
-            {m.text}
+            <div
+              className={`rounded-2xl px-4 py-2 text-sm leading-6 ${
+                m.role === "user"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+              }`}
+            >
+              {m.text}
+            </div>
+            {m.role === "agent" && (m.toolCallCount ?? 0) > 0 && (
+              <p className="mt-1 pl-2 text-xs text-zinc-400 dark:text-zinc-500">
+                🧠 queried memory {m.toolCallCount}×
+              </p>
+            )}
           </div>
         ))}
         {busy && (
