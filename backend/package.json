@@ -8,6 +8,7 @@
     "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
     "taste:recompute": "tsx src/embeddings/recompute-taste.ts",
     "prices:snapshot": "tsx src/pricing/snapshot.ts",
+    "ingest": "tsx src/ingestion/ingest.ts",
     "lambda:build": "esbuild src/lambda/snapshot-handler.ts --bundle --platform=node --target=node22 --format=cjs --external:pg-native --outfile=dist/lambda/index.js"
   },
   "dependencies": {

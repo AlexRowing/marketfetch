@@ -43,6 +43,30 @@ npm run dev      # http://localhost:3000
 The backend worker and database are **not wired yet** — this is the foundation commit.
 Schema and contracts are frozen in `docs/` so both developers can build in parallel.
 
+## Marketplace adapters (real listings)
+
+Real listings come in through `MarketplaceAdapter` implementations
+(`backend/src/marketplaces/`) — official APIs only, no scraping. Each listing
+keeps its original photo, title, description, and a link back to the source
+listing. Adapter #1 is **Reverb** (used music gear, Etsy-owned, open API).
+eBay and Etsy become adapters when their developer-program approvals land.
+
+```sh
+cd backend
+# needs REVERB_API_TOKEN in backend/.env (reverb.com → Settings → API)
+npm run ingest    # pulls the curated queries in src/ingestion/queries.ts,
+                  # upserts on (source, external_id), embeds new listings
+```
+
+Adding a marketplace: implement `MarketplaceAdapter` in one file, register it
+in `ingest.ts`/`snapshot-pass.ts`, add queries. The frontend needs zero changes
+(images, source badges, and outbound links all key off the DB columns).
+
+Price integrity rule: **real listings never get simulated prices.** The 6-hour
+snapshot Lambda re-fetches their actual price from the marketplace (ended
+listings are deactivated); only the 12 `source='seed'` demo listings get
+simulated movement.
+
 ## Scheduled price snapshots (AWS Lambda + EventBridge)
 
 Price Memory grows on its own: Lambda function `marketfetch-price-snapshot`
