@@ -9,15 +9,21 @@ interface HistoryEntry {
   content: string;
 }
 
+// The client stores the full conversation forever; cap what we replay to the
+// model so long-lived chats don't make every turn slower and pricier.
+const MAX_HISTORY = 20;
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const message: unknown = body?.message;
   const history: HistoryEntry[] = Array.isArray(body?.history)
-    ? body.history.filter(
-        (m: HistoryEntry) =>
-          (m.role === "user" || m.role === "assistant") &&
-          typeof m.content === "string",
-      )
+    ? body.history
+        .filter(
+          (m: HistoryEntry) =>
+            (m.role === "user" || m.role === "assistant") &&
+            typeof m.content === "string",
+        )
+        .slice(-MAX_HISTORY)
     : [];
 
   if (typeof message !== "string" || message.trim() === "") {

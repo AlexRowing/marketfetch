@@ -31,8 +31,17 @@ export function ChatPanel() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as Message[];
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+        const parsed: unknown = JSON.parse(saved);
+        // Keep only well-formed messages — a corrupt entry would crash the render.
+        const valid = Array.isArray(parsed)
+          ? (parsed as Message[]).filter(
+              (m) =>
+                (m?.role === "user" || m?.role === "agent") &&
+                typeof m?.text === "string",
+            )
+          : [];
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only; restoring in a mount effect is what avoids an SSR hydration mismatch
+        if (valid.length > 0) setMessages(valid);
       }
     } catch {
       // ignore corrupt or unavailable storage
@@ -112,7 +121,8 @@ export function ChatPanel() {
           <button
             type="button"
             onClick={clearChat}
-            className="text-xs text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
+            disabled={busy}
+            className="text-xs text-zinc-400 hover:text-zinc-700 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-zinc-200"
           >
             Clear chat
           </button>
