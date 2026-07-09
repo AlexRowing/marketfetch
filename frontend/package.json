@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:migrate": "node --env-file=.env.local scripts/run-sql.mjs ../database/migrations/0001_init.sql",
     "db:seed": "node --env-file=.env.local scripts/run-sql.mjs ../database/seed.sql",
+    "db:reset": "node --env-file=.env.local scripts/run-sql.mjs ../database/reset-demo.sql",
     "db:check": "node --env-file=.env.local scripts/db-check.mjs"
   },
   "dependencies": {
