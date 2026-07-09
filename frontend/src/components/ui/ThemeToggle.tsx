@@ -14,6 +14,7 @@ export function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the DOM class applied pre-paint by the layout init script; mount-effect is what avoids an SSR guess
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
 

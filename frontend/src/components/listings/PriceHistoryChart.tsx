@@ -47,11 +47,14 @@ export function PriceHistoryChart({
 
   const prices = points.map((p) => p.price);
   const times = points.map((p) => new Date(p.capturedAt).getTime());
-  const minP = Math.min(...prices);
+  const firstP = prices[0];
   const maxP = Math.max(...prices);
-  const spanP = maxP - minP || 1;
-  const yLo = minP - spanP * 0.15;
-  const yHi = maxP + spanP * 0.15;
+  // Fixed, honest scale: 0 at the bottom, the starting price dead-center,
+  // double the starting price at the top — so a 5% drop looks like 5%, not a
+  // cliff. Only expands if the price ever rises past 2x (keeps the line on
+  // the chart).
+  const yLo = 0;
+  const yHi = Math.max(firstP * 2, maxP * 1.05);
   const minT = times[0];
   const spanT = times[times.length - 1] - minT || 1;
 
@@ -62,9 +65,11 @@ export function PriceHistoryChart({
     .map((p, i) => `${i === 0 ? "M" : "L"}${x(times[i]).toFixed(1)},${y(p.price).toFixed(1)}`)
     .join(" ");
 
-  // A flat price history (min === max) would make all three gridlines identical;
-  // collapse to one so we don't render duplicate values (and duplicate keys).
-  const gridPrices = minP === maxP ? [minP] : [minP, (minP + maxP) / 2, maxP];
+  // Quarter gridlines convey the scale; the starting price gets its own dashed
+  // reference line, so drop any quarter line it would sit on top of.
+  const gridPrices = [0, 0.25, 0.5, 0.75, 1]
+    .map((f) => f * yHi)
+    .filter((gp) => Math.abs(gp - firstP) > yHi * 0.01);
   const last = points.length - 1;
 
   return (
@@ -97,6 +102,26 @@ export function PriceHistoryChart({
               </text>
             </g>
           ))}
+          {/* starting-price reference: dashed, sits mid-chart by construction */}
+          <g>
+            <line
+              x1={PAD.left}
+              x2={W - PAD.right}
+              y1={y(firstP)}
+              y2={y(firstP)}
+              strokeDasharray="4 4"
+              className="stroke-zinc-300 dark:stroke-zinc-700"
+              strokeWidth="1"
+            />
+            <text
+              x={PAD.left - 8}
+              y={y(firstP) + 4}
+              textAnchor="end"
+              className="fill-zinc-500 text-[11px] font-medium [font-variant-numeric:tabular-nums] dark:fill-zinc-400"
+            >
+              {Math.round(firstP)}
+            </text>
+          </g>
           {/* x labels: first and last snapshot dates */}
           <text
             x={x(times[0])}
