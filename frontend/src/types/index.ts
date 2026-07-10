@@ -40,6 +40,8 @@ export interface Listing {
   url: string | null;
   currentPrice: number;
   currency: string;
+  /** When the seller listed it on the marketplace; null until ingestion maps it. */
+  listedAt: string | null;
   firstSeenAt: string;
   lastSeenAt: string;
   isActive: boolean;

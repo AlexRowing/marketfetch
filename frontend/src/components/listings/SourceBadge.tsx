@@ -9,6 +9,7 @@ import { formatSource } from "@/lib/format";
  * marketplace when we add real brand assets.
  */
 const SOURCES: Record<string, { bg: string; mark: string }> = {
+  reverb: { bg: "#F5756C", mark: "R" },
   vinted: { bg: "#09B1BA", mark: "V" },
   ebay: { bg: "#E53238", mark: "e" },
   depop: { bg: "#FF2300", mark: "d" },

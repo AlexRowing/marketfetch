@@ -1,18 +1,22 @@
 import Link from "next/link";
 import { FeedGrid } from "@/components/listings/FeedGrid";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getFeedListings } from "@/lib/listings";
-import { getPreferences } from "@/lib/preferences";
+import {
+  countFeedListings,
+  getFeedCategories,
+  getFeedListings,
+} from "@/lib/listings";
 import { DEMO_USER_ID } from "@/lib/demo-user";
 
 // The feed reads live data from CockroachDB on every request.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Preferences ride along so search can rank results by Buyer Memory.
-  const [listings, preferences] = await Promise.all([
+  // First taste-ranked page; FeedGrid pulls the rest via /api/listings.
+  const [listings, total, categories] = await Promise.all([
     getFeedListings(DEMO_USER_ID),
-    getPreferences(DEMO_USER_ID),
+    countFeedListings(DEMO_USER_ID),
+    getFeedCategories(DEMO_USER_ID),
   ]);
 
   return (
@@ -20,7 +24,7 @@ export default async function Home() {
       <PageHeader maxWidth="max-w-5xl">
         <nav className="flex items-center gap-3 text-sm">
           <span className="hidden rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 sm:inline-block dark:bg-zinc-900 dark:text-zinc-400">
-            {listings.length} listings
+            {total} listings
           </span>
           <Link
             href="/preferences"
@@ -39,7 +43,11 @@ export default async function Home() {
             Deals ranked by your taste — the agent surfaces what&apos;s worth acting on.
           </p>
         </div>
-        <FeedGrid initialItems={listings} preferences={preferences} />
+        <FeedGrid
+          initialItems={listings}
+          initialTotal={total}
+          categories={categories}
+        />
       </main>
     </div>
   );

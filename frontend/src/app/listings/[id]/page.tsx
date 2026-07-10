@@ -3,7 +3,7 @@ import { PriceHistoryChart } from "@/components/listings/PriceHistoryChart";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { SourceBadgeLarge } from "@/components/listings/SourceBadge";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getListingDetail } from "@/lib/listings";
+import { getListingDetail, MIN_SIMILAR } from "@/lib/listings";
 import { formatSource } from "@/lib/format";
 import { query } from "@/lib/db";
 import { DEMO_USER_ID } from "@/lib/demo-user";
@@ -34,10 +34,16 @@ export default async function ListingPage({
     [DEMO_USER_ID, listing.id]
   ).catch(() => {});
 
-  // Vs. market (the deal verdict) and change since first listed. Both negative =
-  // cheaper, the signals the product is built to surface.
+  // Deal verdict vs the median of embedding-similar listings. The % pill only
+  // shows when the cohort is price-coherent (tight interquartile spread) —
+  // a vintage one-off among ordinary comparables gets the range instead of a
+  // misleading "+650% above market".
+  const similar = listing.similar;
+  const cohortOk = similar !== null && similar.count >= MIN_SIMILAR;
+  const spreadOk =
+    cohortOk && (similar.p75 - similar.p25) / similar.median <= 0.5;
   const deal =
-    listing.deltaVsMarket !== null
+    spreadOk && listing.deltaVsMarket !== null
       ? Math.round(listing.deltaVsMarket * 100)
       : null;
   const sinceListed =
@@ -106,6 +112,11 @@ export default async function ListingPage({
             <span className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               {formatPrice(listing.currentPrice, listing.currency)}
             </span>
+            {!listing.isActive && (
+              <span className="inline-flex items-center rounded-full bg-zinc-900 px-3 py-1 text-sm font-semibold uppercase tracking-wide text-white dark:bg-zinc-100 dark:text-zinc-900">
+                Sold
+              </span>
+            )}
             {deal !== null && (
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${
@@ -117,23 +128,42 @@ export default async function ListingPage({
                 }`}
               >
                 {deal < 0
-                  ? `↓ ${-deal}% below market`
+                  ? `↓ ${-deal}% below similar items`
                   : deal > 0
-                    ? `↑ ${deal}% above market`
-                    : "at market price"}
+                    ? `↑ ${deal}% above similar items`
+                    : "priced like similar items"}
               </span>
             )}
           </div>
           <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-900">
             <div>
-              <dt className="text-xs text-zinc-500 dark:text-zinc-400">
-                Market avg (60d)
+              <dt
+                className="text-xs text-zinc-500 dark:text-zinc-400"
+                title="Median price of the closest listings by AI similarity (sold items included)"
+              >
+                Similar items
               </dt>
-              <dd className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                {listing.marketAvg60d !== null
-                  ? formatPrice(listing.marketAvg60d, listing.currency)
-                  : "—"}
-              </dd>
+              {cohortOk ? (
+                <>
+                  <dd className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    {formatPrice(similar.median, listing.currency)}
+                  </dd>
+                  <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+                    {formatPrice(similar.p25, listing.currency)}–
+                    {formatPrice(similar.p75, listing.currency)} ·{" "}
+                    {similar.count} items
+                  </p>
+                </>
+              ) : (
+                <>
+                  <dd className="mt-0.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    —
+                  </dd>
+                  <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+                    not enough similar listings yet
+                  </p>
+                </>
+              )}
             </div>
             <div>
               <dt className="text-xs text-zinc-500 dark:text-zinc-400">

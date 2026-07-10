@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { FeedItem } from "@/lib/listings";
-import type { Preference } from "@/lib/preferences";
+import { useRef, useState } from "react";
+import type { FeedItem, ListingStatus } from "@/lib/listings";
 import type { InteractionKind } from "@/types";
 import { ListingCard } from "@/components/listings/ListingCard";
 
@@ -16,127 +15,102 @@ async function recordInteraction(listingId: string, kind: InteractionKind) {
 }
 
 const ALL = "all";
+const PAGE_SIZE = 24;
 
-/** How strongly a query token counts per matched field. */
-const FIELD_WEIGHTS: [key: "title" | "brand" | "category" | "color" | "size", weight: number][] = [
-  ["title", 3],
-  ["brand", 2.5],
-  ["category", 2],
-  ["color", 1.5],
-  ["size", 1],
-];
-
-/** Lowercase and strip punctuation so "Levi's" and "levis" compare equal. */
-function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+interface ListingsResponse {
+  listings: FeedItem[];
+  total: number;
+  hasMore: boolean;
 }
 
 /**
- * Damerau-Levenshtein edit distance (insert/delete/substitute/transpose),
- * with a cutoff: returns max+1 as soon as the distance must exceed `max`.
+ * Server-driven feed: search, category filter, and pagination all hit
+ * /api/listings so the whole catalog is reachable, not just the first page.
+ * Search is typo-tolerant and ranked by relevance + Buyer Memory server-side.
  */
-function editDistance(a: string, b: string, max: number): number {
-  if (Math.abs(a.length - b.length) > max) return max + 1;
-  let twoAgo: number[] = [];
-  let oneAgo = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    const current = [i];
-    let rowMin = i;
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      let d = Math.min(oneAgo[j] + 1, current[j - 1] + 1, oneAgo[j - 1] + cost);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-        d = Math.min(d, twoAgo[j - 2] + 1);
-      }
-      current.push(d);
-      if (d < rowMin) rowMin = d;
-    }
-    if (rowMin > max) return max + 1;
-    twoAgo = oneAgo;
-    oneAgo = current;
-  }
-  return oneAgo[b.length];
-}
-
-/**
- * How well a query token matches one word, 0..1. Exact beats substring beats
- * fuzzy, so clean matches still rank first. Typo tolerance scales with word
- * length (1 edit for 4-6 chars, 2 for 7+) — "carheart" → "carhartt" (2 edits),
- * "jaket" → "jacket" (1 edit) — covering both buyer and seller misspellings.
- */
-function matchQuality(token: string, word: string): number {
-  if (token === word) return 1;
-  if (
-    token.length >= 3 &&
-    word.length >= 3 &&
-    (word.includes(token) || token.includes(word))
-  ) {
-    return 0.9;
-  }
-  if (token.length >= 4) {
-    const maxD = token.length >= 7 ? 2 : 1;
-    const d = editDistance(token, word, maxD);
-    if (d <= maxD) return 0.9 - 0.15 * d;
-  }
-  return 0;
-}
-
-/**
- * Relevance score for one listing. Every query token must match some field
- * word (0 = not a result); matches are weighted by field and match quality,
- * then boosted by the user's Buyer Memory so preferred brands/colors/sizes —
- * and items within their category budget — rank first.
- */
-function scoreListing(
-  item: FeedItem,
-  tokens: string[],
-  prefs: Preference[]
-): number {
-  let score = 0;
-  for (const token of tokens) {
-    let best = 0;
-    for (const [field, weight] of FIELD_WEIGHTS) {
-      const value = item[field];
-      if (typeof value !== "string") continue;
-      for (const word of value.split(/\s+/)) {
-        const w = normalize(word);
-        if (!w) continue;
-        const q = matchQuality(token, w) * weight;
-        if (q > best) best = q;
-      }
-    }
-    if (best === 0) return 0;
-    score += best;
-  }
-  for (const p of prefs) {
-    const v = p.value.toLowerCase();
-    if (p.kind === "brand" && item.brand?.toLowerCase() === v) score += 2;
-    if (p.kind === "color" && item.color?.toLowerCase() === v) score += 1;
-    if (p.kind === "size" && item.size?.toLowerCase().includes(v)) score += 1;
-    if (
-      p.kind === "category_budget" &&
-      item.category.toLowerCase() === v &&
-      p.numericValue !== null &&
-      item.currentPrice <= p.numericValue
-    ) {
-      score += 1;
-    }
-  }
-  return score;
-}
-
 export function FeedGrid({
   initialItems,
-  preferences,
+  initialTotal,
+  categories,
 }: {
   initialItems: FeedItem[];
-  preferences: Preference[];
+  initialTotal: number;
+  categories: string[];
 }) {
   const [items, setItems] = useState(initialItems);
-  // What's typed in the box vs. the query actually applied (on Enter / 🔍).
+  const [total, setTotal] = useState(initialTotal);
+  // What's typed in the box vs. the query actually applied (on Enter / Search).
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
+  // Available listings vs the Facebook-style "what sold" research view.
+  const [status, setStatus] = useState<ListingStatus>("active");
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Drop responses that arrive after a newer request was issued.
+  const requestSeq = useRef(0);
+
+  const fetchListings = async (
+    opts: { q: string; category: string; status: ListingStatus; offset: number },
+    mode: "replace" | "append"
+  ) => {
+    const seq = ++requestSeq.current;
+    const setBusy = mode === "replace" ? setLoading : setLoadingMore;
+    setBusy(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (opts.q) params.set("q", opts.q);
+      if (opts.category !== ALL) params.set("category", opts.category);
+      if (opts.status !== "active") params.set("status", opts.status);
+      params.set("offset", String(opts.offset));
+      params.set("limit", String(PAGE_SIZE));
+      const res = await fetch(`/api/listings?${params}`);
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as ListingsResponse;
+      if (seq !== requestSeq.current) return; // stale
+      setTotal(data.total);
+      setItems((list) =>
+        mode === "append"
+          ? [...list, ...data.listings.filter((n) => !list.some((i) => i.id === n.id))]
+          : data.listings
+      );
+    } catch {
+      if (seq === requestSeq.current) {
+        setError("Couldn't load listings — try again.");
+      }
+    } finally {
+      if (seq === requestSeq.current) setBusy(false);
+    }
+  };
+
+  const submitSearch = () => {
+    const q = draft.trim();
+    setQuery(q);
+    fetchListings({ q, category, status, offset: 0 }, "replace");
+  };
+
+  const pickCategory = (c: string) => {
+    setCategory(c);
+    fetchListings({ q: query, category: c, status, offset: 0 }, "replace");
+  };
+
+  const pickStatus = (s: ListingStatus) => {
+    if (s === status) return;
+    setStatus(s);
+    fetchListings({ q: query, category, status: s, offset: 0 }, "replace");
+  };
+
+  const clearFilters = () => {
+    setDraft("");
+    setQuery("");
+    setCategory(ALL);
+    fetchListings({ q: "", category: ALL, status, offset: 0 }, "replace");
+  };
+
+  const loadMore = () =>
+    fetchListings({ q: query, category, status, offset: items.length }, "append");
 
   // Optimistic updates: flip the UI immediately, revert if the write fails.
   const toggleSave = (item: FeedItem) => {
@@ -151,48 +125,17 @@ export function FeedGrid({
 
   const reject = (item: FeedItem) => {
     setItems((list) => list.filter((i) => i.id !== item.id));
+    setTotal((t) => Math.max(0, t - 1));
     recordInteraction(item.id, "reject").catch(() => {
       setItems((list) => (list.some((i) => i.id === item.id) ? list : [...list, item]));
+      setTotal((t) => t + 1);
     });
   };
 
-  // Categories present in the current feed — adapts to whatever data exists.
-  const categories = useMemo(
-    () => Array.from(new Set(items.map((i) => i.category))).sort(),
-    [items]
-  );
+  const filtersActive = category !== ALL || query !== "";
+  const hasMore = items.length < total;
 
-  // Category chips filter live; search applies only on submit, then ranks by
-  // relevance + preferences. Ties keep the server's taste ordering.
-  const tokens = useMemo(
-    () => query.trim().toLowerCase().split(/\s+/).filter(Boolean),
-    [query]
-  );
-  const visible = useMemo(() => {
-    const inCategory = items.filter(
-      (i) => category === ALL || i.category === category
-    );
-    if (tokens.length === 0) return inCategory;
-    return inCategory
-      .map((item, idx) => ({
-        item,
-        idx,
-        score: scoreListing(item, tokens, preferences),
-      }))
-      .filter((r) => r.score > 0)
-      .sort((a, b) => b.score - a.score || a.idx - b.idx)
-      .map((r) => r.item);
-  }, [items, category, tokens, preferences]);
-
-  const submitSearch = () => setQuery(draft);
-
-  const clearFilters = () => {
-    setDraft("");
-    setQuery("");
-    setCategory(ALL);
-  };
-
-  if (items.length === 0) {
+  if (items.length === 0 && !filtersActive && !loading && status === "active") {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
         <span className="text-4xl" aria-hidden>
@@ -208,8 +151,6 @@ export function FeedGrid({
       </div>
     );
   }
-
-  const filtersActive = category !== ALL || tokens.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -244,7 +185,8 @@ export function FeedGrid({
             <button
               type="submit"
               aria-label="Search"
-              className="flex h-7 items-center gap-1.5 rounded-md bg-brand-600 px-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600"
+              disabled={loading}
+              className="flex h-7 items-center gap-1.5 rounded-md bg-brand-600 px-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-600"
             >
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
                 <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
@@ -255,51 +197,92 @@ export function FeedGrid({
                   strokeLinecap="round"
                 />
               </svg>
-              Search
+              {loading ? "…" : "Search"}
             </button>
           </div>
         </form>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <CategoryChip
-            label="All"
-            active={category === ALL}
-            onClick={() => setCategory(ALL)}
-          />
-          {categories.map((c) => (
+        <div className="flex items-center gap-3">
+          {/* Available vs sold — like Facebook Marketplace's sold filter. */}
+          <div
+            role="group"
+            aria-label="Listing status"
+            className="flex shrink-0 rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700"
+          >
+            {(
+              [
+                ["active", "Available"],
+                ["sold", "Sold"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => pickStatus(value)}
+                aria-pressed={status === value}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  status === value
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <CategoryChip
-              key={c}
-              label={c}
-              active={category === c}
-              onClick={() => setCategory(c)}
+              label="All"
+              active={category === ALL}
+              onClick={() => pickCategory(ALL)}
             />
-          ))}
+            {categories.map((c) => (
+              <CategoryChip
+                key={c}
+                label={c}
+                active={category === c}
+                onClick={() => pickCategory(c)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
-      {visible.length === 0 ? (
+      {error && (
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+
+      {items.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 py-14 text-center dark:border-zinc-700">
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No listings match your filters.
+            {filtersActive
+              ? "No listings match your filters."
+              : "Nothing has sold yet — sold listings appear here once the tracker notices them."}
           </p>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="mt-2 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
-          >
-            Clear filters
-          </button>
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-2 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <>
           {filtersActive && (
             <p className="text-xs text-zinc-400 dark:text-zinc-500">
-              {tokens.length > 0
-                ? `${visible.length} result${visible.length === 1 ? "" : "s"} for “${query.trim()}” — ranked by match & your preferences`
-                : `${visible.length} of ${items.length} listings`}
+              {query !== ""
+                ? `${total} result${total === 1 ? "" : "s"} for “${query}” — ranked by match & your preferences`
+                : `${total} listing${total === 1 ? "" : "s"}`}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {visible.map((item) => (
+          <div
+            className={`grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 ${loading ? "opacity-50" : ""}`}
+          >
+            {items.map((item) => (
               <ListingCard
                 key={item.id}
                 item={item}
@@ -308,6 +291,18 @@ export function FeedGrid({
               />
             ))}
           </div>
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore || loading}
+              className="mx-auto rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-brand-700 dark:hover:text-brand-400"
+            >
+              {loadingMore
+                ? "Loading…"
+                : `Load more (${total - items.length} left)`}
+            </button>
+          )}
         </>
       )}
     </div>

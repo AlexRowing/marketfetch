@@ -23,8 +23,9 @@ export function ListingCard({
   onToggleSave: (item: FeedItem) => void;
   onReject: (item: FeedItem) => void;
 }) {
+  const sold = !item.isActive;
   const dropPct =
-    item.priceChangePct !== null && item.priceChangePct < -0.01
+    !sold && item.priceChangePct !== null && item.priceChangePct < -0.01
       ? Math.round(Math.abs(item.priceChangePct) * 100)
       : null;
   // "seed" is placeholder data — only badge a real marketplace source.
@@ -38,11 +39,22 @@ export function ListingCard({
         className="absolute inset-0 z-[1]"
       />
       <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-linear-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
-        <ListingImage
-          imageUrl={item.imageUrl}
-          category={item.category}
-          alt={item.title}
-        />
+        <div
+          className={`absolute inset-0 flex items-center justify-center ${
+            sold ? "opacity-60 saturate-50" : ""
+          }`}
+        >
+          <ListingImage
+            imageUrl={item.imageUrl}
+            category={item.category}
+            alt={item.title}
+          />
+        </div>
+        {sold && (
+          <span className="absolute left-2 top-2 rounded-full bg-zinc-900/90 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm dark:bg-zinc-100/90 dark:text-zinc-900">
+            Sold
+          </span>
+        )}
         {dropPct !== null && (
           <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white shadow-sm">
             ↓ {dropPct}%
@@ -53,26 +65,28 @@ export function ListingCard({
             <SourceBadge source={item.source} />
           </span>
         )}
-        <div className="absolute right-2 top-2 z-10 flex gap-1.5">
-          <button
-            type="button"
-            aria-label={item.isSaved ? "Unsave" : "Save"}
-            title={item.isSaved ? "Unsave" : "Save"}
-            onClick={() => onToggleSave(item)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-base shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90"
-          >
-            {item.isSaved ? "❤️" : "🤍"}
-          </button>
-          <button
-            type="button"
-            aria-label="Not interested"
-            title="Not interested"
-            onClick={() => onReject(item)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm text-zinc-500 shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90 dark:text-zinc-300"
-          >
-            ✕
-          </button>
-        </div>
+        {!sold && (
+          <div className="absolute right-2 top-2 z-10 flex gap-1.5">
+            <button
+              type="button"
+              aria-label={item.isSaved ? "Unsave" : "Save"}
+              title={item.isSaved ? "Unsave" : "Save"}
+              onClick={() => onToggleSave(item)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-base shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90"
+            >
+              {item.isSaved ? "❤️" : "🤍"}
+            </button>
+            <button
+              type="button"
+              aria-label="Not interested"
+              title="Not interested"
+              onClick={() => onReject(item)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm text-zinc-500 shadow-sm transition-transform hover:scale-110 dark:bg-zinc-800/90 dark:text-zinc-300"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h2 className="line-clamp-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">

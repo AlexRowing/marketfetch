@@ -70,7 +70,8 @@ Unique on `(user_id, kind, value)`.
 | url | STRING NULL | link to original listing |
 | current_price | DECIMAL(10,2) | denormalized from latest snapshot for fast feed queries |
 | currency | STRING | ISO 4217, default `EUR` |
-| first_seen_at | TIMESTAMPTZ | → listing age |
+| listed_at | TIMESTAMPTZ NULL | when the seller listed it on the marketplace (e.g. Reverb `published_at`); populated by ingestion. NULL → UI falls back to first_seen_at (migration 0002) |
+| first_seen_at | TIMESTAMPTZ | when *we* first ingested it; listing-age fallback |
 | last_seen_at | TIMESTAMPTZ | listings vanish; don't hard-delete |
 | is_active | BOOL | |
 | embedding | VECTOR(1024) NULL | from title+description+brand+category |
