@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FeedGrid } from "@/components/listings/FeedGrid";
+import { DealsBrief } from "@/components/listings/DealsBrief";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
   countFeedListings,
   getFeedCategories,
   getFeedListings,
 } from "@/lib/listings";
+import { getDealsForUser } from "@/lib/deals";
 import { getSessionUser } from "@/lib/auth";
 
 // The feed reads live data from CockroachDB on every request.
@@ -17,10 +19,12 @@ export default async function Home() {
   if (!user) redirect("/login");
 
   // First taste-ranked page; FeedGrid pulls the rest via /api/listings.
-  const [listings, total, categories] = await Promise.all([
+  // Deals brief is the agent's proactive pick, computed over the whole catalog.
+  const [listings, total, categories, deals] = await Promise.all([
     getFeedListings(user.id),
     countFeedListings(user.id),
     getFeedCategories(user.id),
+    getDealsForUser(user.id),
   ]);
 
   return (
@@ -47,6 +51,7 @@ export default async function Home() {
             Deals ranked by your taste — the agent surfaces what&apos;s worth acting on.
           </p>
         </div>
+        <DealsBrief deals={deals} />
         <FeedGrid
           initialItems={listings}
           initialTotal={total}
