@@ -6,7 +6,7 @@ import {
 } from "@/lib/listings";
 import { getPreferences } from "@/lib/preferences";
 import { scoreListing, tokenize } from "@/lib/search";
-import { DEMO_USER_ID } from "@/lib/demo-user";
+import { getSessionUser } from "@/lib/auth";
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 48;
@@ -26,6 +26,11 @@ const MAX_LIMIT = 48;
  * catalog scale for now; move into SQL (trigram) if listings reach 10k+.
  */
 export async function GET(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+  }
+
   const params = new URL(request.url).searchParams;
   const q = params.get("q")?.trim() ?? "";
   const category = params.get("category")?.trim() || null;
@@ -40,8 +45,8 @@ export async function GET(request: Request) {
 
   if (tokens.length === 0) {
     const [listings, total] = await Promise.all([
-      getFeedListings(DEMO_USER_ID, { status, category, offset, limit }),
-      countFeedListings(DEMO_USER_ID, status, category),
+      getFeedListings(user.id, { status, category, offset, limit }),
+      countFeedListings(user.id, status, category),
     ]);
     return NextResponse.json({
       listings,
@@ -51,8 +56,8 @@ export async function GET(request: Request) {
   }
 
   const [candidates, preferences] = await Promise.all([
-    getSearchCandidates(DEMO_USER_ID, status, category),
-    getPreferences(DEMO_USER_ID),
+    getSearchCandidates(user.id, status, category),
+    getPreferences(user.id),
   ]);
   const ranked = candidates
     .map((item, idx) => ({ item, idx, score: scoreListing(item, tokens, preferences) }))

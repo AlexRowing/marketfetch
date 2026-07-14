@@ -6,7 +6,6 @@ import {
   type ToolResultContentBlock,
 } from "@aws-sdk/client-bedrock-runtime";
 import { connectMcp } from "@/lib/mcp";
-import { DEMO_USER_ID } from "@/lib/demo-user";
 
 const bedrock = new BedrockRuntimeClient({
   region: process.env.AWS_REGION ?? "us-east-1",
@@ -26,7 +25,9 @@ export interface AgentReply {
   toolCalls: AgentToolCall[];
 }
 
-const SYSTEM_PROMPT = `You are MarketFetch, an AI buying agent for second-hand marketplaces.
+const systemPrompt = (
+  userId: string
+) => `You are MarketFetch, an AI buying agent for second-hand marketplaces.
 You have direct access to your own memory — a CockroachDB database — through tools.
 Answer ONLY from what you find in the database; query it rather than guessing.
 
@@ -43,7 +44,7 @@ The database is "defaultdb". Schema:
   append-only history.
 - interactions(id, user_id, listing_id, kind view|save|reject|unsave, created_at)
 
-The current user id is '${DEMO_USER_ID}'.
+The current user id is '${userId}'.
 
 Ranking by taste: ORDER BY l.embedding <=> t.embedding using the user's row in
 user_taste_embeddings — do the comparison INSIDE the SQL (join or subquery).
@@ -69,7 +70,8 @@ When you answer:
  */
 export async function runAgent(
   userMessage: string,
-  history: { role: "user" | "assistant"; content: string }[] = [],
+  history: { role: "user" | "assistant"; content: string }[],
+  userId: string,
 ): Promise<AgentReply> {
   const mcp = await connectMcp();
   const toolCalls: AgentToolCall[] = [];
@@ -99,7 +101,7 @@ export async function runAgent(
       const response = await bedrock.send(
         new ConverseCommand({
           modelId: MODEL_ID,
-          system: [{ text: SYSTEM_PROMPT }],
+          system: [{ text: systemPrompt(userId) }],
           messages,
           toolConfig: { tools },
           inferenceConfig: { maxTokens: 1500 },

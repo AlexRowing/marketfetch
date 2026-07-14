@@ -15,8 +15,8 @@ export function ChatWidget() {
   const pathname = usePathname();
 
   // The dedicated /chat page already renders a full-height ChatPanel — a
-  // floating copy on top of it would be redundant.
-  if (pathname === "/chat") return null;
+  // floating copy on top of it would be redundant. No agent before login.
+  if (pathname === "/chat" || pathname === "/login") return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">

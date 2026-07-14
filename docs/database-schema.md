@@ -27,8 +27,9 @@ listings ──  embedding column     (vector-indexed)
 | column | type | notes |
 |---|---|---|
 | id | UUID PK | |
-| email | STRING UNIQUE | demo user is fine for hackathon |
+| email | STRING UNIQUE | lowercased before insert/lookup |
 | display_name | STRING | |
+| password_hash | STRING NULL | `s1$<saltHex>$<scryptHex>` (Node crypto.scrypt, N=16384 r=8 p=1, 64-byte key); NULL = account can't log in yet (migration 0003) |
 | created_at | TIMESTAMPTZ | |
 
 ### `user_preferences` — Buyer Memory (structured)

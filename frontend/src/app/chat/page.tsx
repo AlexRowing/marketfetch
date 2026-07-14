@@ -1,10 +1,15 @@
+import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { getSessionUser } from "@/lib/auth";
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <PageHeader>
+      <PageHeader user={user}>
         <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 dark:text-zinc-500">
           <span aria-hidden>🤖</span> Agent
         </span>

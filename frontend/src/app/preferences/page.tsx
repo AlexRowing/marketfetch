@@ -1,16 +1,20 @@
+import { redirect } from "next/navigation";
 import { PreferencesPanel } from "@/components/preferences/PreferencesPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getPreferences } from "@/lib/preferences";
-import { DEMO_USER_ID } from "@/lib/demo-user";
+import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function PreferencesPage() {
-  const prefs = await getPreferences(DEMO_USER_ID);
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+
+  const prefs = await getPreferences(user.id);
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
-      <PageHeader>
+      <PageHeader user={user}>
         <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
           Buyer Memory
         </span>

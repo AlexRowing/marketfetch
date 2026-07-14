@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { DEMO_USER_ID } from "@/lib/demo-user";
+import { getSessionUser } from "@/lib/auth";
 import { recomputeTasteEmbedding } from "@/lib/taste";
 import type { InteractionKind } from "@/types";
 
 const KINDS: InteractionKind[] = ["view", "save", "reject", "unsave"];
 
 export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => null);
   const listingId: unknown = body?.listingId;
   const kind: unknown = body?.kind;
@@ -27,11 +32,11 @@ export async function POST(request: Request) {
       `INSERT INTO interactions (user_id, listing_id, kind)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      [DEMO_USER_ID, listingId, kind]
+      [user.id, listingId, kind]
     );
     // Synchronous per docs/database-schema.md open decision #2. If this
     // gets slow with more listings, move it to the backend worker.
-    await recomputeTasteEmbedding(DEMO_USER_ID).catch((err) =>
+    await recomputeTasteEmbedding(user.id).catch((err) =>
       console.error("taste recompute failed:", err)
     );
     return NextResponse.json({ id: rows[0].id }, { status: 201 });

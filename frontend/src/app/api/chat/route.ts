@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runAgent } from "@/lib/agent";
+import { getSessionUser } from "@/lib/auth";
 
 // Agent turns routinely take 10-30s (several Bedrock + MCP round trips).
 export const maxDuration = 60;
@@ -14,6 +15,11 @@ interface HistoryEntry {
 const MAX_HISTORY = 20;
 
 export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => null);
   const message: unknown = body?.message;
   const history: HistoryEntry[] = Array.isArray(body?.history)
@@ -34,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await runAgent(message.trim(), history);
+    const result = await runAgent(message.trim(), history, user.id);
     return NextResponse.json(result);
   } catch (err) {
     console.error("agent error:", err);
