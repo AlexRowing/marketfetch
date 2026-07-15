@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CHAT_STORAGE_KEY } from "@/components/chat/ChatPanel";
 
 /** Logged-in user chip + sign-out, shown in the shared page header. */
 export function UserMenu({ displayName }: { displayName: string }) {
@@ -13,6 +14,13 @@ export function UserMenu({ displayName }: { displayName: string }) {
     setBusy(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      // Don't let one account's conversation carry over to the next sign-in.
+      try {
+        sessionStorage.removeItem(CHAT_STORAGE_KEY);
+        localStorage.removeItem(CHAT_STORAGE_KEY);
+      } catch {
+        // ignore unavailable storage
+      }
       router.push("/login");
       router.refresh();
     } finally {

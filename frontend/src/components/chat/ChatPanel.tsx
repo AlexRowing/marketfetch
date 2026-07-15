@@ -11,7 +11,10 @@ interface Message {
   isError?: boolean;
 }
 
-const STORAGE_KEY = "marketfetch.chat";
+// sessionStorage (not localStorage): the conversation survives reloads and
+// navigation within a browsing session, but clears when the browser/tab closes
+// — so it doesn't stick forever. Also cleared on logout (see UserMenu).
+export const CHAT_STORAGE_KEY = "marketfetch.chat";
 const GREETING: Message = {
   role: "agent",
   text: "Hi! Ask me about deals — I remember your preferences, saves, and the price history of every listing I've seen.",
@@ -36,8 +39,14 @@ export function ChatPanel() {
 
   // Restore a saved conversation on mount (client-only — no SSR hydration mismatch).
   useEffect(() => {
+    // Purge any history left in localStorage by older builds, which stuck forever.
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    try {
+      const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
       if (saved) {
         const parsed: unknown = JSON.parse(saved);
         // Keep only well-formed messages — a corrupt entry would crash the render.
@@ -61,7 +70,7 @@ export function ChatPanel() {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     } catch {
       // ignore quota or unavailable storage
     }
@@ -70,7 +79,7 @@ export function ChatPanel() {
   const clearChat = () => {
     setMessages([GREETING]);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(CHAT_STORAGE_KEY);
     } catch {
       // ignore
     }
