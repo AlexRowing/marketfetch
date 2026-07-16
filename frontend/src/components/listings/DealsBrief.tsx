@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ListingImage } from "@/components/listings/ListingImage";
+import { SparkIcon, TrendDownIcon } from "@/components/ui/icons";
 import { formatPrice } from "@/lib/format";
 import type { Deal } from "@/lib/deals";
 
@@ -12,16 +13,21 @@ export function DealsBrief({ deals }: { deals: Deal[] }) {
   if (deals.length === 0) return null;
 
   return (
-    <section className="mb-8 rounded-2xl border border-brand-100 bg-brand-50/50 p-4 dark:border-brand-700/40 dark:bg-brand-700/5 sm:p-5">
-      <div className="mb-3 flex items-baseline gap-2">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-brand-700 dark:text-brand-300">
-          <span aria-hidden>🤖</span> Deals for you
-        </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          the agent found these in your feed, priced to move
-        </p>
+    <section className="mb-9 rounded-3xl border border-brand-100 bg-brand-50/50 p-5 dark:border-brand-800/40 dark:bg-brand-500/[0.06] sm:p-6">
+      <div className="mb-4 flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm dark:bg-brand-500">
+          <SparkIcon className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight text-brand-800 dark:text-brand-200">
+            Deals for you
+          </h2>
+          <p className="text-xs text-brand-700/70 dark:text-brand-300/70">
+            Found in your feed by the agent — priced to move
+          </p>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {deals.map((deal) => (
           <DealCard key={deal.id} deal={deal} />
         ))}
@@ -37,30 +43,30 @@ function DealCard({ deal }: { deal: Deal }) {
       : null;
 
   return (
-    <Link
-      href={`/listings/${deal.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/5 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-700/60"
-    >
-      <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-linear-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
-        <ListingImage
-          imageUrl={deal.imageUrl}
-          category={deal.category}
-          alt={deal.title}
-        />
+    <Link href={`/listings/${deal.id}`} className="group flex flex-col">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-linear-to-br from-white to-zinc-100 shadow-sm ring-1 ring-black/[0.05] transition-all duration-300 ease-out group-hover:shadow-xl group-hover:shadow-black/[0.07] dark:from-zinc-900 dark:to-zinc-950 dark:shadow-none dark:ring-white/[0.08] dark:group-hover:ring-white/15">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <ListingImage
+            imageUrl={deal.imageUrl}
+            category={deal.category}
+            alt={deal.title}
+          />
+        </div>
         {drop !== null && (
-          <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white shadow-sm">
-            ↓ {drop}%
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white shadow-sm">
+            <TrendDownIcon className="h-3 w-3" strokeWidth={2.25} />
+            {drop}%
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="line-clamp-1 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+      <div className="flex flex-col gap-0.5 px-0.5 pt-2.5">
+        <h3 className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {deal.title}
         </h3>
-        <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <span className="text-[17px] font-semibold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-50">
           {formatPrice(deal.currentPrice, deal.currency)}
         </span>
-        <p className="mt-1 text-xs font-medium leading-4 text-brand-700 dark:text-brand-300">
+        <p className="mt-1 line-clamp-2 text-xs font-medium leading-4 text-brand-700 dark:text-brand-300">
           {deal.reason}
         </p>
       </div>

@@ -1,21 +1,12 @@
 "use client";
 
 import { useState } from "react";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  jackets: "🧥",
-  jeans: "👖",
-  sneakers: "👟",
-  shoes: "🥾",
-  fleeces: "🧸",
-  accessories: "🧢",
-  shirts: "👔",
-};
+import { BagIcon } from "@/components/ui/icons";
 
 /**
  * Listing photo with graceful degradation: renders the real image when
- * ingestion provides one, and falls back to the category emoji when the URL
- * is missing — or turns out to be broken (scraped image links rot).
+ * ingestion provides one, and falls back to a clean icon + category label when
+ * the URL is missing — or turns out to be broken (scraped image links rot).
  * Plain <img> (not next/image): marketplace image hosts are unknown ahead of
  * time, so we skip the remotePatterns allowlist.
  */
@@ -39,17 +30,17 @@ export function ListingImage({
         alt={alt}
         loading="lazy"
         onError={() => setBroken(true)}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
       />
     );
   }
 
   return (
-    <span
-      aria-hidden
-      className="text-6xl transition-transform duration-300 group-hover:scale-110"
-    >
-      {CATEGORY_EMOJI[category] ?? "🛍️"}
-    </span>
+    <div className="flex flex-col items-center gap-2 text-zinc-400 transition-transform duration-500 ease-out group-hover:scale-105 dark:text-zinc-600">
+      <BagIcon className="h-9 w-9" strokeWidth={1.5} />
+      <span className="text-[11px] font-medium uppercase tracking-widest">
+        {category}
+      </span>
+    </div>
   );
 }

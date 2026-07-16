@@ -38,3 +38,26 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Satisfying feedback when a listing is saved: the heart springs, settles.
+   State feedback, not decoration — so it fires only on the toggle-to-saved. */
+@keyframes heart-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.32); }
+  70% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.animate-heart-pop {
+  animation: heart-pop 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-heart-pop {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

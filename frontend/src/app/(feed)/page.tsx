@@ -43,11 +43,11 @@ export default async function Home() {
         </nav>
       </PageHeader>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <div className="mb-7">
+          <h1 className="text-3xl font-semibold tracking-tight text-balance text-black dark:text-zinc-50">
             Your feed
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1.5 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
             Deals ranked by your taste — the agent surfaces what&apos;s worth acting on.
           </p>
         </div>

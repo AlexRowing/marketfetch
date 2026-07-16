@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { FeedItem, ListingStatus } from "@/lib/listings";
 import type { InteractionKind } from "@/types";
 import { ListingCard } from "@/components/listings/ListingCard";
+import { BagIcon, SearchIcon } from "@/components/ui/icons";
 
 async function recordInteraction(listingId: string, kind: InteractionKind) {
   const res = await fetch("/api/interactions", {
@@ -137,14 +138,14 @@ export function FeedGrid({
 
   if (items.length === 0 && !filtersActive && !loading && status === "active") {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
-        <span className="text-4xl" aria-hidden>
-          🛍️
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 py-20 text-center dark:border-zinc-700">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
+          <BagIcon className="h-7 w-7" strokeWidth={1.5} />
         </span>
-        <h2 className="mt-3 text-base font-medium text-zinc-900 dark:text-zinc-100">
+        <h2 className="mt-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
           You&apos;re all caught up
         </h2>
-        <p className="mt-1 max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1.5 max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
           You&apos;ve been through every listing. New deals arrive as the agent
           keeps scanning the marketplaces.
         </p>
@@ -188,15 +189,7 @@ export function FeedGrid({
               disabled={loading}
               className="flex h-7 items-center gap-1.5 rounded-md bg-brand-600 px-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-600"
             >
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
-                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-                <path
-                  d="m20.5 20.5-4.2-4.2"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <SearchIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
               {loading ? "…" : "Search"}
             </button>
           </div>
@@ -280,7 +273,7 @@ export function FeedGrid({
             </p>
           )}
           <div
-            className={`grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 ${loading ? "opacity-50" : ""}`}
+            className={`grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 ${loading ? "opacity-50" : ""}`}
           >
             {items.map((item) => (
               <ListingCard
@@ -296,7 +289,7 @@ export function FeedGrid({
               type="button"
               onClick={loadMore}
               disabled={loadingMore || loading}
-              className="mx-auto rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-brand-700 dark:hover:text-brand-400"
+              className="mx-auto rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-brand-700 dark:hover:text-brand-400"
             >
               {loadingMore
                 ? "Loading…"
