@@ -49,7 +49,10 @@ Real listings come in through `MarketplaceAdapter` implementations
 (`backend/src/marketplaces/`) — official APIs only, no scraping. Each listing
 keeps its original photo, title, description, and a link back to the source
 listing. Adapter #1 is **Reverb** (used music gear, Etsy-owned, open API).
-eBay and Etsy become adapters when their developer-program approvals land.
+Adapter #2 is **Discogs** (vinyl/music media): its API has no per-seller
+listing search, so a Discogs listing is a release priced at its lowest current
+ask, linking to the release's sell page. eBay and Etsy become adapters when
+their developer-program approvals land.
 
 ```sh
 cd backend

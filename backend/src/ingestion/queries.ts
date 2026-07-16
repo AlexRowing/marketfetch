@@ -18,4 +18,13 @@ export const INGEST_QUERIES: IngestQuery[] = [
   { adapter: "reverb", query: "overdrive pedal", limit: 15 },
   { adapter: "reverb", query: "delay pedal", limit: 15 },
   { adapter: "reverb", query: "tube amplifier", limit: 15 },
+  // Discogs: a "listing" is a release priced at its lowest current ask.
+  // Artist-level queries: album-specific ones collapse to a single listing
+  // because search results are dominated by pressings of one master.
+  { adapter: "discogs", query: "pink floyd", limit: 10 },
+  { adapter: "discogs", query: "radiohead", limit: 10 },
+  { adapter: "discogs", query: "miles davis", limit: 10 },
+  { adapter: "discogs", query: "fleetwood mac", limit: 10 },
+  { adapter: "discogs", query: "daft punk", limit: 10 },
+  { adapter: "discogs", query: "joy division", limit: 10 },
 ];

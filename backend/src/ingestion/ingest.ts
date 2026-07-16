@@ -4,17 +4,9 @@
 // changes, then embed everything that still lacks an embedding.
 import { pool, toVectorLiteral } from "../db/client.js";
 import { embedText, listingEmbeddingText } from "../embeddings/titan.js";
-import type { MarketplaceAdapter, MarketplaceListing } from "../marketplaces/adapter.js";
-import { createReverbAdapter } from "../marketplaces/reverb.js";
+import type { MarketplaceListing } from "../marketplaces/adapter.js";
+import { adaptersFromEnv } from "../pricing/snapshot-pass.js";
 import { INGEST_QUERIES } from "./queries.js";
-
-function buildAdapters(): Map<string, MarketplaceAdapter> {
-  const adapters = new Map<string, MarketplaceAdapter>();
-  if (process.env.REVERB_API_TOKEN) {
-    adapters.set("reverb", createReverbAdapter(process.env.REVERB_API_TOKEN));
-  }
-  return adapters;
-}
 
 async function upsert(listing: MarketplaceListing): Promise<"inserted" | "price_changed" | "unchanged"> {
   const existing = await pool.query<{ id: string; current_price: string }>(
@@ -77,9 +69,11 @@ async function embedMissing(): Promise<number> {
 }
 
 async function main() {
-  const adapters = buildAdapters();
+  const adapters = adaptersFromEnv();
   if (adapters.size === 0) {
-    throw new Error("no marketplace adapters configured — set REVERB_API_TOKEN in backend/.env");
+    throw new Error(
+      "no marketplace adapters configured — set REVERB_API_TOKEN / DISCOGS_API_TOKEN in backend/.env",
+    );
   }
 
   let inserted = 0, changed = 0, unchanged = 0;
@@ -89,7 +83,14 @@ async function main() {
       console.warn(`skipping "${q.query}" — no adapter for ${q.adapter}`);
       continue;
     }
-    const results = await adapter.search(q.query, q.limit);
+    // One failing query (rate limit, outage) shouldn't abort the whole run.
+    let results: MarketplaceListing[];
+    try {
+      results = await adapter.search(q.query, q.limit);
+    } catch (err) {
+      console.error(`search "${q.query}" (${q.adapter}) failed:`, err);
+      continue;
+    }
     for (const listing of results) {
       const outcome = await upsert(listing);
       if (outcome === "inserted") inserted++;

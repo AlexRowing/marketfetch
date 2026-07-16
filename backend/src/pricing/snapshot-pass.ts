@@ -9,6 +9,7 @@
 import type pg from "pg";
 import type { MarketplaceAdapter } from "../marketplaces/adapter.js";
 import { createReverbAdapter } from "../marketplaces/reverb.js";
+import { createDiscogsAdapter } from "../marketplaces/discogs.js";
 
 // Sellers cut prices far more often than they raise them.
 const MOVE_PROBABILITY = 0.35;
@@ -35,6 +36,9 @@ export function adaptersFromEnv(): Map<string, MarketplaceAdapter> {
   const adapters = new Map<string, MarketplaceAdapter>();
   if (process.env.REVERB_API_TOKEN) {
     adapters.set("reverb", createReverbAdapter(process.env.REVERB_API_TOKEN));
+  }
+  if (process.env.DISCOGS_API_TOKEN) {
+    adapters.set("discogs", createDiscogsAdapter(process.env.DISCOGS_API_TOKEN));
   }
   return adapters;
 }

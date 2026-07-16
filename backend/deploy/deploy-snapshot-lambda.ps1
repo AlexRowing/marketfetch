@@ -20,8 +20,9 @@ $envFile = Join-Path $Backend ".env"
 if (-not (Test-Path $envFile)) { throw "backend/.env not found - create it with DATABASE_URL=..." }
 $dbUrl = (Get-Content $envFile | Where-Object { $_ -match "^DATABASE_URL=" } | Select-Object -First 1) -replace "^DATABASE_URL=", ""
 if (-not $dbUrl) { throw "DATABASE_URL not found in backend/.env" }
-# Optional: enables real-listing price refresh in the snapshot pass.
+# Optional: enable real-listing price refresh per marketplace.
 $reverbToken = (Get-Content $envFile | Where-Object { $_ -match "^REVERB_API_TOKEN=" } | Select-Object -First 1) -replace "^REVERB_API_TOKEN=", ""
+$discogsToken = (Get-Content $envFile | Where-Object { $_ -match "^DISCOGS_API_TOKEN=" } | Select-Object -First 1) -replace "^DISCOGS_API_TOKEN=", ""
 
 # --- Bundle the handler ------------------------------------------------------
 Write-Host "Building bundle..."
@@ -56,6 +57,7 @@ Write-Host "Role: $roleArn"
 $envJsonFile = New-TemporaryFile
 $lambdaEnv = @{ DATABASE_URL = $dbUrl }
 if ($reverbToken) { $lambdaEnv.REVERB_API_TOKEN = $reverbToken }
+if ($discogsToken) { $lambdaEnv.DISCOGS_API_TOKEN = $discogsToken }
 @{ Variables = $lambdaEnv } | ConvertTo-Json | Set-Content -Path $envJsonFile -Encoding ascii
 
 cmd /c "aws lambda get-function --function-name $FunctionName --region $Region 2>nul" | Out-Null
@@ -63,11 +65,11 @@ if ($LASTEXITCODE -eq 0) {
   Write-Host "Updating existing function..."
   aws lambda update-function-code --function-name $FunctionName --zip-file "fileb://$zipPath" --region $Region | Out-Null
   aws lambda wait function-updated --function-name $FunctionName --region $Region
-  aws lambda update-function-configuration --function-name $FunctionName --environment "file://$envJsonFile" --timeout 300 --memory-size 256 --region $Region | Out-Null
+  aws lambda update-function-configuration --function-name $FunctionName --environment "file://$envJsonFile" --timeout 600 --memory-size 256 --region $Region | Out-Null
   aws lambda wait function-updated --function-name $FunctionName --region $Region
 } else {
   Write-Host "Creating function $FunctionName..."
-  aws lambda create-function --function-name $FunctionName --runtime nodejs22.x --handler index.handler --role $roleArn --zip-file "fileb://$zipPath" --timeout 300 --memory-size 256 --environment "file://$envJsonFile" --region $Region | Out-Null
+  aws lambda create-function --function-name $FunctionName --runtime nodejs22.x --handler index.handler --role $roleArn --zip-file "fileb://$zipPath" --timeout 600 --memory-size 256 --environment "file://$envJsonFile" --region $Region | Out-Null
   aws lambda wait function-active --function-name $FunctionName --region $Region
 }
 Remove-Item $envJsonFile
@@ -88,4 +90,5 @@ Write-Host "  aws lambda invoke --function-name $FunctionName --region $Region o
 Write-Host "  aws logs tail /aws/lambda/$FunctionName --region $Region --since 1h"
 Write-Host "Pause the schedule with:"
 Write-Host "  aws events disable-rule --name $RuleName --region $Region"
+
 
