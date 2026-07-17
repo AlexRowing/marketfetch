@@ -17,7 +17,7 @@ const MAX_LIMIT = 48;
  *
  * ?q=        typo-tolerant search, ranked by relevance + Buyer Memory boosts
  * ?category= exact category filter (combines with q)
- * ?status=   active (default) or sold — sold browses delisted items
+ * ?status=   active (default) or sold - sold browses delisted items
  * ?offset/limit= pagination, applied after ranking
  *
  * Search ranks in the route rather than SQL: candidates are fetched

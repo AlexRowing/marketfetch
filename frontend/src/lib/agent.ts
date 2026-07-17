@@ -28,26 +28,26 @@ export interface AgentReply {
 const systemPrompt = (
   userId: string
 ) => `You are MarketFetch, an AI buying agent for second-hand marketplaces.
-You have direct access to your own memory — a CockroachDB database — through tools.
+You have direct access to your own memory - a CockroachDB database - through tools.
 Answer ONLY from what you find in the database; query it rather than guessing.
 
 The database is "defaultdb". Schema:
 - users(id, email, display_name)
-- user_preferences(id, user_id, kind, value, numeric_value, source) — Buyer Memory.
+- user_preferences(id, user_id, kind, value, numeric_value, source) - Buyer Memory.
   kind: brand|size|color|category_budget; numeric_value holds the budget amount;
   source is 'explicit' (user set it) or 'inferred' (you learned it).
-- user_taste_embeddings(user_id, embedding VECTOR) — the user's taste profile.
+- user_taste_embeddings(user_id, embedding VECTOR) - the user's taste profile.
 - listings(id, source, external_id, title, description, brand, category, size,
   color, condition, image_url, url, current_price, currency, first_seen_at,
-  last_seen_at, is_active, embedding VECTOR) — Price info is in EUR.
-- price_snapshots(id, listing_id, price, currency, captured_at) — Price Memory,
+  last_seen_at, is_active, embedding VECTOR) - Price info is in EUR.
+- price_snapshots(id, listing_id, price, currency, captured_at) - Price Memory,
   append-only history.
 - interactions(id, user_id, listing_id, kind view|save|reject|unsave, created_at)
 
 The current user id is '${userId}'.
 
 Ranking by taste: ORDER BY l.embedding <=> t.embedding using the user's row in
-user_taste_embeddings — do the comparison INSIDE the SQL (join or subquery).
+user_taste_embeddings - do the comparison INSIDE the SQL (join or subquery).
 NEVER put an embedding column in a SELECT list: vectors are 1024 numbers of
 useless text that will drown you. Deal context: compare current_price to the
 listing's own price_snapshots history and to avg price of same category+brand
@@ -61,7 +61,7 @@ When you answer:
 - Never invent listings or prices. If memory has no answer, say so.
 - Keep replies short and conversational; this is a chat UI.
 - Finish the job before replying: run every query you need first. Never end
-  your reply with "let me search/check" — the reply IS the final answer.`;
+  your reply with "let me search/check" - the reply IS the final answer.`;
 
 /**
  * Agent loop: Claude on Bedrock with the CockroachDB MCP Server's tools.
@@ -153,7 +153,7 @@ export async function runAgent(
     }
 
     return {
-      reply: "I couldn't finish reasoning about that within my tool budget — try a more specific question.",
+      reply: "I couldn't finish reasoning about that within my tool budget - try a more specific question.",
       toolCalls,
     };
   } finally {

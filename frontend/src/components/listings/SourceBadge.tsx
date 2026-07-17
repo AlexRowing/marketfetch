@@ -5,7 +5,7 @@ import { formatSource } from "@/lib/format";
  * their brand color and mark; unknown sources fall back to a neutral monogram,
  * so new marketplaces from ingestion render fine with zero frontend changes.
  *
- * Marks are monogram tiles for now — swap the `mark` for an official SVG per
+ * Marks are monogram tiles for now - swap the `mark` for an official SVG per
  * marketplace when we add real brand assets.
  */
 const SOURCES: Record<string, { bg: string; mark: string }> = {
@@ -39,7 +39,7 @@ function SourceLogo({ source, size = 16 }: { source: string; size?: number }) {
 /** Compact pill for listing cards (overlaid on the image area). */
 export function SourceBadge({ source }: { source: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 py-0.5 pl-1 pr-2 text-[11px] font-medium text-zinc-700 shadow-sm backdrop-blur-sm dark:bg-black/70 dark:text-zinc-200">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 py-0.5 pl-1 pr-2 text-[11px] font-medium text-ink-muted shadow-sm backdrop-blur-sm">
       <SourceLogo source={source} size={16} />
       {formatSource(source)}
     </span>
@@ -49,7 +49,7 @@ export function SourceBadge({ source }: { source: string }) {
 /** Larger inline variant for the listing detail page. */
 export function SourceBadgeLarge({ source }: { source: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white py-1 pl-1.5 pr-2.5 text-sm font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+    <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface py-1 pl-1.5 pr-2.5 text-sm font-medium text-ink-muted">
       <SourceLogo source={source} size={20} />
       {formatSource(source)}
     </span>

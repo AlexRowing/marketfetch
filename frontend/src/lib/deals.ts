@@ -2,10 +2,10 @@ import { query } from "@/lib/db";
 import { getPreferences } from "@/lib/preferences";
 
 /**
- * "Deals for you" — the agent's proactive brief. Deterministic and grounded in
+ * "Deals for you" - the agent's proactive brief. Deterministic and grounded in
  * the DB (no LLM call, so it's instant and reliable): among the user's
- * top taste-ranked listings, keep the ones that are genuinely well-priced —
- * either dropped since listing, or below the median of embedding-similar items —
+ * top taste-ranked listings, keep the ones that are genuinely well-priced -
+ * either dropped since listing, or below the median of embedding-similar items -
  * and explain why, tying in Buyer Memory when it applies.
  */
 
@@ -74,6 +74,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
            WHERE listing_id = l.id ORDER BY captured_at ASC LIMIT 1
          ) fp ON true
          WHERE l.is_active
+           AND l.source <> 'seed'
            AND NOT EXISTS (
              SELECT 1 FROM interactions r
              WHERE r.user_id = $1 AND r.listing_id = l.id AND r.kind = 'reject'
@@ -93,7 +94,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
          FROM (
            SELECT comp.current_price::FLOAT8 AS price
            FROM listings comp
-           WHERE comp.id != c.id AND (comp.embedding <=> c.embedding) < 0.5
+           WHERE comp.id != c.id AND comp.source <> 'seed' AND (comp.embedding <=> c.embedding) < 0.5
            ORDER BY comp.embedding <=> c.embedding ASC
            LIMIT 15
          ) o

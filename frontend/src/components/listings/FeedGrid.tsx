@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { FeedItem, ListingStatus } from "@/lib/listings";
 import type { InteractionKind } from "@/types";
 import { ListingCard } from "@/components/listings/ListingCard";
-import { BagIcon, SearchIcon } from "@/components/ui/icons";
+import { BagIcon, CloseIcon, SearchIcon } from "@/components/ui/icons";
 
 async function recordInteraction(listingId: string, kind: InteractionKind) {
   const res = await fetch("/api/interactions", {
@@ -79,7 +79,7 @@ export function FeedGrid({
       );
     } catch {
       if (seq === requestSeq.current) {
-        setError("Couldn't load listings — try again.");
+        setError("Couldn't load listings - try again.");
       }
     } finally {
       if (seq === requestSeq.current) setBusy(false);
@@ -138,14 +138,14 @@ export function FeedGrid({
 
   if (items.length === 0 && !filtersActive && !loading && status === "active") {
     return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 py-20 text-center dark:border-zinc-700">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line-strong py-20 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface text-ink-soft ring-1 ring-line">
           <BagIcon className="h-7 w-7" strokeWidth={1.5} />
         </span>
-        <h2 className="mt-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        <h2 className="mt-5 font-serif text-xl font-semibold text-ink">
           You&apos;re all caught up
         </h2>
-        <p className="mt-1.5 max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1.5 max-w-xs text-sm text-ink-muted">
           You&apos;ve been through every listing. New deals arrive as the agent
           keeps scanning the marketplaces.
         </p>
@@ -169,7 +169,7 @@ export function FeedGrid({
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Search by name, brand, colour…"
             aria-label="Search listings"
-            className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-28 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-full rounded-xl border border-line bg-surface py-2.5 pl-4 pr-28 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
           />
           <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
             {query !== "" && (
@@ -178,16 +178,16 @@ export function FeedGrid({
                 onClick={clearFilters}
                 aria-label="Clear search"
                 title="Clear search"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-soft hover:bg-surface-2 hover:text-ink"
               >
-                ✕
+                <CloseIcon className="h-4 w-4" />
               </button>
             )}
             <button
               type="submit"
               aria-label="Search"
               disabled={loading}
-              className="flex h-7 items-center gap-1.5 rounded-md bg-brand-600 px-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-600"
+              className="flex h-7 items-center gap-1.5 rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
             >
               <SearchIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
               {loading ? "…" : "Search"}
@@ -195,11 +195,11 @@ export function FeedGrid({
           </div>
         </form>
         <div className="flex items-center gap-3">
-          {/* Available vs sold — like Facebook Marketplace's sold filter. */}
+          {/* Available vs sold - like Facebook Marketplace's sold filter. */}
           <div
             role="group"
             aria-label="Listing status"
-            className="flex shrink-0 rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700"
+            className="flex shrink-0 rounded-lg border border-line p-0.5"
           >
             {(
               [
@@ -214,8 +214,8 @@ export function FeedGrid({
                 aria-pressed={status === value}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                   status === value
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    ? "bg-ink text-canvas"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {label}
@@ -247,17 +247,17 @@ export function FeedGrid({
       )}
 
       {items.length === 0 && !loading ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 py-14 text-center dark:border-zinc-700">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line-strong py-14 text-center">
+          <p className="text-sm text-ink-muted">
             {filtersActive
               ? "No listings match your filters."
-              : "Nothing has sold yet — sold listings appear here once the tracker notices them."}
+              : "Nothing has sold yet - sold listings appear here once the tracker notices them."}
           </p>
           {filtersActive && (
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-2 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
+              className="mt-2 text-sm font-medium text-brand-600 hover:underline"
             >
               Clear filters
             </button>
@@ -266,14 +266,14 @@ export function FeedGrid({
       ) : (
         <>
           {filtersActive && (
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-ink-soft">
               {query !== ""
-                ? `${total} result${total === 1 ? "" : "s"} for “${query}” — ranked by match & your preferences`
+                ? `${total} result${total === 1 ? "" : "s"} for “${query}” - ranked by match & your preferences`
                 : `${total} listing${total === 1 ? "" : "s"}`}
             </p>
           )}
           <div
-            className={`grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 ${loading ? "opacity-50" : ""}`}
+            className={`grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 ${loading ? "opacity-50" : ""}`}
           >
             {items.map((item) => (
               <ListingCard
@@ -289,7 +289,7 @@ export function FeedGrid({
               type="button"
               onClick={loadMore}
               disabled={loadingMore || loading}
-              className="mx-auto rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-brand-700 dark:hover:text-brand-400"
+              className="mx-auto rounded-full border border-line bg-surface px-6 py-2.5 text-sm font-medium text-ink-muted shadow-sm transition-colors hover:border-brand-300 hover:text-brand-700 disabled:opacity-60"
             >
               {loadingMore
                 ? "Loading…"
@@ -316,10 +316,10 @@ function CategoryChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium capitalize transition-colors ${
         active
-          ? "bg-brand-600 text-white dark:bg-brand-500"
-          : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100"
+          ? "bg-brand-600 text-white"
+          : "border border-line text-ink-muted hover:border-line-strong hover:text-ink"
       }`}
     >
       {label}

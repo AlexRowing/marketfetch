@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body?.password === "string" ? body.password : "";
 
-  // One generic message for every failure mode — don't leak which emails exist.
+  // One generic message for every failure mode - don't leak which emails exist.
   const invalid = () =>
     NextResponse.json({ error: "Wrong email or password." }, { status: 401 });
 

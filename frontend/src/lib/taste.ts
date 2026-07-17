@@ -19,7 +19,7 @@ interface SignalRow {
  * Recompute a user's taste embedding as the weighted mean of the listing
  * embeddings they've interacted with. Per listing, the latest
  * save/unsave/reject wins (a later save overrides an earlier reject).
- * Mirrors backend/src/embeddings/recompute-taste.ts — keep the two in sync.
+ * Mirrors backend/src/embeddings/recompute-taste.ts - keep the two in sync.
  */
 export async function recomputeTasteEmbedding(userId: string): Promise<void> {
   const rows = await query<SignalRow>(

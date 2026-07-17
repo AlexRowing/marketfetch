@@ -1,36 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-/* Brand accent — indigo/violet. Used sparingly (logo, nav, primary actions,
-   focus rings). Emerald stays reserved for deal / price-drop signals. */
-@theme {
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-}
-
 /* Class-based dark mode: the ThemeToggle sets .dark on <html> (persisted in
    localStorage, defaulting to the OS preference via the layout's init script). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ===========================================================================
+   Editorial-luxe design system
+   Warm paper canvas · white floating surfaces · warm near-black ink ·
+   one confident cobalt accent (emerald stays reserved for deal signals).
+   Dynamic (theme-dependent) colors live on CSS vars; the static cobalt ramp
+   lives in @theme so Tailwind emits brand-* utilities.
+   ========================================================================== */
+:root {
+  --canvas: #f5f3ef; /* warm paper - carries texture, not the whole mood */
+  --surface: #ffffff; /* cards float as white paper on the canvas */
+  --surface-2: #faf8f4; /* secondary panels */
+  --ink: #1b1613; /* warm near-black */
+  --ink-muted: #5e564d; /* secondary text - ~6:1 on canvas */
+  --ink-soft: #938a7e; /* tertiary / large text only */
+  --line: #e7e2d8; /* hairline borders on paper */
+  --line-strong: #d8d2c5;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --canvas: #121110; /* warm near-black */
+  --surface: #1b1917; /* card */
+  --surface-2: #211e1b; /* secondary panels */
+  --ink: #f3efe8; /* warm off-white */
+  --ink-muted: #a79e92; /* secondary text - ~7:1 on canvas */
+  --ink-soft: #6f6759; /* tertiary / large text only */
+  --line: #2e2a25;
+  --line-strong: #3a352f;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
+}
+
+/* Cobalt accent - logo, primary actions, focus, agent identity. Used with
+   intent, not as decoration. Emerald (Tailwind default) stays for deals. */
+@theme {
+  --color-brand-50: #eef1ff;
+  --color-brand-100: #dde3ff;
+  --color-brand-200: #c1ccff;
+  --color-brand-300: #9dadff;
+  --color-brand-400: #7285ff;
+  --color-brand-500: #405cff;
+  --color-brand-600: #2540e6;
+  --color-brand-700: #1c31bd;
+  --color-brand-800: #1a2c96;
 }
 
 body {
@@ -39,8 +73,19 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Serif display gets optical-size + tighter tracking befitting large headlines. */
+.font-serif {
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: var(--color-brand-600);
+  color: #fff;
+}
+
 /* Satisfying feedback when a listing is saved: the heart springs, settles.
-   State feedback, not decoration — so it fires only on the toggle-to-saved. */
+   State feedback, not decoration - fires only on the toggle-to-saved. */
 @keyframes heart-pop {
   0% { transform: scale(1); }
   35% { transform: scale(1.32); }
@@ -51,8 +96,20 @@ body {
   animation: heart-pop 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Editorial entrance: content is visible by default, then eased into place on
+   load. Keyed off an already-painted default so it never ships blank if the
+   animation can't run (hidden tab, headless render). */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise {
+  animation: rise-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-heart-pop {
+  .animate-heart-pop,
+  .animate-rise {
     animation: none;
   }
   *,

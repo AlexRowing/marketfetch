@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   // Agent needs the CockroachDB MCP Server (its DB connection) configured.
   // When it isn't (e.g. env vars unset on a deploy), answer calmly as the agent
-  // instead of surfacing a red error — the rest of the app still works.
+  // instead of surfacing a red error - the rest of the app still works.
   if (
     !process.env.CRDB_MCP_URL ||
     !process.env.CRDB_MCP_API_KEY ||
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   ) {
     return NextResponse.json({
       reply:
-        "I can't reach my memory right now — my data connection isn't set up in this environment yet. Your feed, saved items, and deals all still work normally.",
+        "I can't reach my memory right now - my data connection isn't set up in this environment yet. Your feed, saved items, and deals all still work normally.",
       toolCalls: [],
     });
   }
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("agent error:", err);
     return NextResponse.json(
-      { error: "agent failed — check server logs" },
+      { error: "agent failed - check server logs" },
       { status: 500 },
     );
   }

@@ -1,16 +1,17 @@
 import Link from "next/link";
 
 /**
- * MarketFetch logo: a price-tag glyph with an AI "spark", in the brand gradient,
- * next to the wordmark. Links home. Used in page headers.
+ * MarketFetch logo: a flat cobalt price-tag mark next to a serif wordmark.
+ * Editorial and confident - the serif carries the brand's "taste" voice.
+ * Links home. Used in page headers.
  */
 export function BrandMark() {
   return (
     <Link href="/" className="group flex items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-brand-500 to-brand-700 shadow-sm transition-transform group-hover:scale-105">
+      <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-brand-600 text-white shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-6">
         <svg
           viewBox="0 0 24 24"
-          className="h-5 w-5 text-white"
+          className="h-[18px] w-[18px]"
           fill="none"
           aria-hidden
         >
@@ -21,12 +22,11 @@ export function BrandMark() {
             strokeWidth="1.8"
             strokeLinejoin="round"
           />
-          {/* tag hole / spark */}
-          <circle cx="7.75" cy="7.75" r="1.35" fill="currentColor" />
+          <circle cx="7.75" cy="7.75" r="1.4" fill="currentColor" />
         </svg>
       </span>
-      <span className="text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
-        Market<span className="text-brand-600 dark:text-brand-400">Fetch</span>
+      <span className="font-serif text-[1.4rem] font-semibold leading-none tracking-tight text-ink">
+        MarketFetch
       </span>
     </Link>
   );

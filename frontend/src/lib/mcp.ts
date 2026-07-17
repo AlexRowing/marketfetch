@@ -4,7 +4,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 /**
  * Connects to the CockroachDB Cloud managed MCP Server, which exposes the
  * database (both memory systems) as tools the agent can call.
- * Auth: service-account API key. One client per request — the managed
+ * Auth: service-account API key. One client per request - the managed
  * endpoint is stateless-HTTP and a chat turn makes only a handful of calls.
  */
 export async function connectMcp(): Promise<Client> {

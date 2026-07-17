@@ -6,7 +6,7 @@ import { BagIcon } from "@/components/ui/icons";
 /**
  * Listing photo with graceful degradation: renders the real image when
  * ingestion provides one, and falls back to a clean icon + category label when
- * the URL is missing — or turns out to be broken (scraped image links rot).
+ * the URL is missing - or turns out to be broken (scraped image links rot).
  * Plain <img> (not next/image): marketplace image hosts are unknown ahead of
  * time, so we skip the remotePatterns allowlist.
  */
@@ -36,7 +36,7 @@ export function ListingImage({
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 text-zinc-400 transition-transform duration-500 ease-out group-hover:scale-105 dark:text-zinc-600">
+    <div className="flex flex-col items-center gap-2 text-ink-soft transition-transform duration-500 ease-out group-hover:scale-105">
       <BagIcon className="h-9 w-9" strokeWidth={1.5} />
       <span className="text-[11px] font-medium uppercase tracking-widest">
         {category}

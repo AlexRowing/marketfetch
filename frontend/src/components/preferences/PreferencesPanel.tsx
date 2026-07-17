@@ -3,48 +3,64 @@
 import { useState } from "react";
 import type { Preference } from "@/lib/preferences";
 import type { PreferenceKind } from "@/types";
+import { CloseIcon, SparkIcon } from "@/components/ui/icons";
 
 const SECTIONS: {
   kind: PreferenceKind;
   title: string;
+  /** One-line description shown under the title. */
+  note: string;
   hint: string;
   /** Common values offered as one-click chips (budgets pre-fill the category). */
   suggestions: string[];
 }[] = [
   {
     kind: "brand",
-    title: "Brands",
-    hint: "e.g. Carhartt",
+    title: "Brands & makers",
+    note: "Labels, makers, or artists you look for, in any category.",
+    hint: "e.g. Carhartt, Sony, Blue Note",
     suggestions: [
       "Carhartt",
       "Nike",
+      "Sony",
+      "Apple",
       "Levi's",
-      "The North Face",
-      "Patagonia",
-      "Adidas",
-      "Dr. Martens",
-      "Uniqlo",
+      "Fender",
       "New Balance",
-      "Ralph Lauren",
+      "Nikon",
+      "Uniqlo",
+      "IKEA",
     ],
-  },
-  {
-    kind: "size",
-    title: "Sizes",
-    hint: "e.g. M, 42, W32 L32",
-    suggestions: ["XS", "S", "M", "L", "XL", "W30", "W32", "W34", "41", "42", "43"],
-  },
-  {
-    kind: "color",
-    title: "Colors",
-    hint: "e.g. black",
-    suggestions: ["Black", "White", "Grey", "Navy", "Blue", "Green", "Brown", "Beige", "Cream"],
   },
   {
     kind: "category_budget",
     title: "Budgets",
+    note: "Set a ceiling per category so the agent flags what's in range.",
     hint: "category",
-    suggestions: ["Jackets", "Jeans", "Sneakers", "Shoes", "Fleeces", "Shirts", "Accessories"],
+    suggestions: [
+      "Vinyl",
+      "Records",
+      "Electronics",
+      "Books",
+      "Cameras",
+      "Sneakers",
+      "Jackets",
+      "Homeware",
+    ],
+  },
+  {
+    kind: "color",
+    title: "Colours",
+    note: "Optional. Colours or finishes you gravitate toward.",
+    hint: "e.g. black, navy, walnut",
+    suggestions: ["Black", "White", "Navy", "Green", "Brown", "Beige", "Grey", "Silver"],
+  },
+  {
+    kind: "size",
+    title: "Sizes",
+    note: "Only relevant if you shop for clothing or shoes.",
+    hint: "e.g. M, 42, W32",
+    suggestions: ["XS", "S", "M", "L", "XL", "W30", "W32", "W34", "41", "42", "43"],
   },
 ];
 
@@ -74,28 +90,23 @@ async function deletePreference(id: string) {
 
 function Chip({ pref, onRemove }: { pref: Preference; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-1 pl-3 pr-1.5 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-3 pr-1.5 text-sm text-ink shadow-sm">
       {pref.value}
       {pref.numericValue !== null && (
-        <span className="text-zinc-500 dark:text-zinc-400">
-          €{pref.numericValue}
-        </span>
+        <span className="text-ink-muted">€{pref.numericValue}</span>
       )}
       {pref.source === "inferred" && (
-        <span
-          title="Learned by the agent"
-          className="text-xs text-zinc-400 dark:text-zinc-500"
-        >
-          ✨
+        <span title="Learned by the agent" className="flex items-center">
+          <SparkIcon className="h-3.5 w-3.5 text-brand-500 dark:text-brand-400" />
         </span>
       )}
       <button
         type="button"
         aria-label={`Remove ${pref.value}`}
         onClick={onRemove}
-        className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+        className="flex h-5 w-5 items-center justify-center rounded-full text-ink-soft hover:bg-surface-2 hover:text-ink"
       >
-        ✕
+        <CloseIcon className="h-3.5 w-3.5" />
       </button>
     </span>
   );
@@ -104,6 +115,7 @@ function Chip({ pref, onRemove }: { pref: Preference; onRemove: () => void }) {
 function Section({
   kind,
   title,
+  note,
   hint,
   suggestions,
   prefs,
@@ -112,6 +124,7 @@ function Section({
 }: {
   kind: PreferenceKind;
   title: string;
+  note: string;
   hint: string;
   suggestions: string[];
   prefs: Preference[];
@@ -136,7 +149,7 @@ function Section({
   const taken = new Set(prefs.map((p) => p.value.toLowerCase()));
   const openSuggestions = suggestions.filter((s) => !taken.has(s.toLowerCase()));
 
-  // A suggestion click adds directly — except budgets, which still need an
+  // A suggestion click adds directly - except budgets, which still need an
   // amount, so it pre-fills the category input for the user to complete.
   const pickSuggestion = (s: string) => {
     if (isBudget) setValue(s);
@@ -144,15 +157,14 @@ function Section({
   };
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+    <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+      <h2 className="font-serif text-lg font-semibold tracking-tight text-ink">
         {title}
       </h2>
+      <p className="mt-0.5 text-xs text-ink-soft">{note}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {prefs.length === 0 && (
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">
-            Nothing yet.
-          </p>
+          <p className="text-sm text-ink-soft">Nothing yet.</p>
         )}
         {prefs.map((p) => (
           <Chip key={p.id} pref={p} onRemove={() => onRemove(p)} />
@@ -170,7 +182,7 @@ function Section({
           onChange={(e) => setValue(e.target.value)}
           placeholder={hint}
           aria-label={`Add ${title.toLowerCase()}`}
-          className="w-40 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-40 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
         />
         {isBudget && (
           <input
@@ -179,19 +191,19 @@ function Section({
             placeholder="€ max"
             inputMode="decimal"
             aria-label="Budget amount"
-            className="w-20 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-20 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
           />
         )}
         <button
           type="submit"
-          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
         >
           Add
         </button>
       </form>
       {openSuggestions.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="text-xs text-ink-soft">
             {isBudget ? "Set budget for:" : "Suggestions:"}
           </span>
           {openSuggestions.map((s) => (
@@ -202,7 +214,7 @@ function Section({
               aria-label={
                 isBudget ? `Set budget for ${s}` : `Add ${s} to ${title.toLowerCase()}`
               }
-              className="rounded-full border border-dashed border-zinc-300 px-2.5 py-1 text-xs text-zinc-500 transition-colors hover:border-solid hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+              className="rounded-full border border-dashed border-line-strong px-2.5 py-1 text-xs text-ink-muted transition-colors hover:border-solid hover:border-brand-400 hover:bg-surface-2 hover:text-ink"
             >
               + {s}
             </button>

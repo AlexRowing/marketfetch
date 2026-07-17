@@ -38,8 +38,8 @@ export function PriceHistoryChart({
 
   if (points.length < 2) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        Only one price recorded so far — history builds as the tracker sees
+      <p className="text-sm text-ink-muted">
+        Only one price recorded so far - history builds as the tracker sees
         this listing again.
       </p>
     );
@@ -50,7 +50,7 @@ export function PriceHistoryChart({
   const firstP = prices[0];
   const maxP = Math.max(...prices);
   // Fixed, honest scale: 0 at the bottom, the starting price dead-center,
-  // double the starting price at the top — so a 5% drop looks like 5%, not a
+  // double the starting price at the top - so a 5% drop looks like 5%, not a
   // cliff. Only expands if the price ever rises past 2x (keeps the line on
   // the chart).
   const yLo = 0;
@@ -89,14 +89,14 @@ export function PriceHistoryChart({
                 x2={W - PAD.right}
                 y1={y(gp)}
                 y2={y(gp)}
-                className="stroke-zinc-200 dark:stroke-zinc-800"
+                className="stroke-line"
                 strokeWidth="1"
               />
               <text
                 x={PAD.left - 8}
                 y={y(gp) + 4}
                 textAnchor="end"
-                className="fill-zinc-400 text-[11px] [font-variant-numeric:tabular-nums] dark:fill-zinc-500"
+                className="fill-ink-soft text-[11px] [font-variant-numeric:tabular-nums]"
               >
                 {Math.round(gp)}
               </text>
@@ -110,14 +110,14 @@ export function PriceHistoryChart({
               y1={y(firstP)}
               y2={y(firstP)}
               strokeDasharray="4 4"
-              className="stroke-zinc-300 dark:stroke-zinc-700"
+              className="stroke-line-strong"
               strokeWidth="1"
             />
             <text
               x={PAD.left - 8}
               y={y(firstP) + 4}
               textAnchor="end"
-              className="fill-zinc-500 text-[11px] font-medium [font-variant-numeric:tabular-nums] dark:fill-zinc-400"
+              className="fill-ink-muted text-[11px] font-medium [font-variant-numeric:tabular-nums]"
             >
               {Math.round(firstP)}
             </text>
@@ -127,7 +127,7 @@ export function PriceHistoryChart({
             x={x(times[0])}
             y={H - 8}
             textAnchor="start"
-            className="fill-zinc-400 text-[11px] dark:fill-zinc-500"
+            className="fill-ink-soft text-[11px]"
           >
             {formatDate(points[0].capturedAt)}
           </text>
@@ -135,7 +135,7 @@ export function PriceHistoryChart({
             x={x(times[last])}
             y={H - 8}
             textAnchor="end"
-            className="fill-zinc-400 text-[11px] dark:fill-zinc-500"
+            className="fill-ink-soft text-[11px]"
           >
             {formatDate(points[last].capturedAt)}
           </text>
@@ -149,7 +149,7 @@ export function PriceHistoryChart({
                 cy={y(p.price)}
                 r="4"
                 fill="currentColor"
-                className="stroke-white dark:stroke-zinc-950"
+                className="stroke-surface"
                 strokeWidth="2"
               />
               {/* oversized hit target for the tooltip */}
@@ -168,7 +168,7 @@ export function PriceHistoryChart({
           <text
             x={x(times[last]) + 10}
             y={y(points[last].price) + 4}
-            className="fill-zinc-900 text-[13px] font-semibold dark:fill-zinc-100"
+            className="fill-ink text-[13px] font-semibold"
           >
             {formatPrice(points[last].price, currency)}
           </text>
@@ -176,7 +176,7 @@ export function PriceHistoryChart({
 
         {hover !== null && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-zinc-900 px-2 py-1 text-xs text-white shadow dark:bg-zinc-100 dark:text-zinc-900"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-ink px-2 py-1 text-xs text-canvas shadow"
             style={{
               left: `${(x(times[hover]) / W) * 100}%`,
               top: `${(y(points[hover].price) / H) * 100 - 4}%`,

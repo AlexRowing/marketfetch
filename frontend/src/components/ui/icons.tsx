@@ -1,7 +1,7 @@
 import type { SVGProps } from "react";
 
 /**
- * Crafted SVG icon set — replaces emoji affordances across the app so the UI
+ * Crafted SVG icon set - replaces emoji affordances across the app so the UI
  * reads as a designed marketplace, not a starter template. All icons are 24×24,
  * inherit `currentColor`, and take standard SVG props (className, aria, …).
  * Stroke icons share 1.75 weight + round joins for a single, coherent voice.
@@ -49,7 +49,7 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-/** Outbound link — "view on <marketplace>". */
+/** Outbound link - "view on <marketplace>". */
 export function ArrowUpRightIcon(props: IconProps) {
   return (
     <svg {...strokeBase} {...props}>
@@ -58,7 +58,7 @@ export function ArrowUpRightIcon(props: IconProps) {
   );
 }
 
-/** Agent / AI mark — a four-point spark. Replaces the 🤖 emoji. */
+/** Agent / AI mark - a four-point spark. Replaces the 🤖 emoji. */
 export function SparkIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}>
@@ -68,7 +68,7 @@ export function SparkIcon(props: IconProps) {
   );
 }
 
-/** Downward price trend — replaces the "↓" glyph on drop badges. */
+/** Downward price trend - replaces the "↓" glyph on drop badges. */
 export function TrendDownIcon(props: IconProps) {
   return (
     <svg {...strokeBase} {...props}>
@@ -78,7 +78,17 @@ export function TrendDownIcon(props: IconProps) {
   );
 }
 
-/** Search — shared magnifier. */
+/** Upward price trend - the "↑ above market" counterpart to TrendDownIcon. */
+export function TrendUpIcon(props: IconProps) {
+  return (
+    <svg {...strokeBase} {...props}>
+      <path d="M4 17l6.5-6.5L14 14l6-6" />
+      <path d="M20 12.5V8h-4.5" />
+    </svg>
+  );
+}
+
+/** Search - shared magnifier. */
 export function SearchIcon(props: IconProps) {
   return (
     <svg {...strokeBase} {...props}>
@@ -88,7 +98,7 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
-/** Generic listing / bag — empty states and image fallbacks. */
+/** Generic listing / bag - empty states and image fallbacks. */
 export function BagIcon(props: IconProps) {
   return (
     <svg {...strokeBase} {...props}>

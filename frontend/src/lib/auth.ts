@@ -1,4 +1,4 @@
-// Server-only module (imports pg via lib/db) — never import from client components.
+// Server-only module (imports pg via lib/db) - never import from client components.
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { query } from "@/lib/db";

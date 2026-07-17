@@ -1,4 +1,4 @@
-// Pure presentation helpers — safe to import from client components.
+// Pure presentation helpers - safe to import from client components.
 // Keep DB-touching code out of this file so it never leaks into the browser bundle.
 
 /** Display name for a marketplace slug, e.g. "vinted" → "Vinted". */

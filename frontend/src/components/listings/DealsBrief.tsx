@@ -6,28 +6,28 @@ import type { Deal } from "@/lib/deals";
 
 /**
  * The agent's proactive "here's what I found for you" strip, above the feed.
- * Server-rendered from getDealsForUser — deterministic, grounded, instant.
+ * Server-rendered from getDealsForUser - deterministic, grounded, instant.
  * Renders nothing when there are no genuine deals (never fabricate one).
  */
 export function DealsBrief({ deals }: { deals: Deal[] }) {
   if (deals.length === 0) return null;
 
   return (
-    <section className="mb-9 rounded-3xl border border-brand-100 bg-brand-50/50 p-5 dark:border-brand-800/40 dark:bg-brand-500/[0.06] sm:p-6">
-      <div className="mb-4 flex items-center gap-2.5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm dark:bg-brand-500">
-          <SparkIcon className="h-4.5 w-4.5" />
-        </span>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-brand-800 dark:text-brand-200">
-            Deals for you
+    <section className="mb-11">
+      <div className="mb-5 flex items-end justify-between gap-4 border-b border-line pb-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white shadow-sm">
+            <SparkIcon className="h-4 w-4" />
+          </span>
+          <h2 className="font-serif text-xl font-semibold tracking-tight text-ink">
+            The agent&apos;s picks
           </h2>
-          <p className="text-xs text-brand-700/70 dark:text-brand-300/70">
-            Found in your feed by the agent — priced to move
-          </p>
         </div>
+        <span className="hidden shrink-0 pb-1 font-mono text-[11px] tracking-tight text-ink-soft sm:block">
+          priced to move
+        </span>
       </div>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4">
         {deals.map((deal) => (
           <DealCard key={deal.id} deal={deal} />
         ))}
@@ -44,7 +44,7 @@ function DealCard({ deal }: { deal: Deal }) {
 
   return (
     <Link href={`/listings/${deal.id}`} className="group flex flex-col">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-linear-to-br from-white to-zinc-100 shadow-sm ring-1 ring-black/[0.05] transition-all duration-300 ease-out group-hover:shadow-xl group-hover:shadow-black/[0.07] dark:from-zinc-900 dark:to-zinc-950 dark:shadow-none dark:ring-white/[0.08] dark:group-hover:ring-white/15">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-surface shadow-[0_1px_2px_rgba(20,16,12,0.05)] ring-1 ring-line transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_18px_40px_-14px_rgba(20,16,12,0.28)] group-hover:ring-line-strong">
         <div className="absolute inset-0 flex items-center justify-center">
           <ListingImage
             imageUrl={deal.imageUrl}
@@ -59,14 +59,14 @@ function DealCard({ deal }: { deal: Deal }) {
           </span>
         )}
       </div>
-      <div className="flex flex-col gap-0.5 px-0.5 pt-2.5">
-        <h3 className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+      <div className="flex flex-col gap-0.5 px-0.5 pt-3">
+        <h3 className="truncate text-[13px] font-medium text-ink">
           {deal.title}
         </h3>
-        <span className="text-[17px] font-semibold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-50">
+        <span className="font-serif text-xl font-semibold tracking-tight tabular-nums text-ink">
           {formatPrice(deal.currentPrice, deal.currency)}
         </span>
-        <p className="mt-1 line-clamp-2 text-xs font-medium leading-4 text-brand-700 dark:text-brand-300">
+        <p className="mt-1 line-clamp-2 text-xs font-medium leading-4 text-brand-700 dark:text-brand-400">
           {deal.reason}
         </p>
       </div>
