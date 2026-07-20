@@ -6,7 +6,7 @@ import {
 } from "@/lib/listings";
 import { getPreferences } from "@/lib/preferences";
 import { scoreListing, tokenize } from "@/lib/search";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 48;
@@ -26,10 +26,9 @@ const MAX_LIMIT = 48;
  * catalog scale for now; move into SQL (trigram) if listings reach 10k+.
  */
 export async function GET(request: Request) {
+  // Public feed: guests browse unpersonalized via the sentinel viewer id.
   const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "not logged in" }, { status: 401 });
-  }
+  const viewerId = user?.id ?? ANON_USER_ID;
 
   const params = new URL(request.url).searchParams;
   const q = params.get("q")?.trim() ?? "";
@@ -45,8 +44,8 @@ export async function GET(request: Request) {
 
   if (tokens.length === 0) {
     const [listings, total] = await Promise.all([
-      getFeedListings(user.id, { status, category, offset, limit }),
-      countFeedListings(user.id, status, category),
+      getFeedListings(viewerId, { status, category, offset, limit }),
+      countFeedListings(viewerId, status, category),
     ]);
     return NextResponse.json({
       listings,
@@ -56,8 +55,8 @@ export async function GET(request: Request) {
   }
 
   const [candidates, preferences] = await Promise.all([
-    getSearchCandidates(user.id, status, category),
-    getPreferences(user.id),
+    getSearchCandidates(viewerId, status, category),
+    getPreferences(viewerId),
   ]);
   const ranked = candidates
     .map((item, idx) => ({ item, idx, score: scoreListing(item, tokens, preferences) }))

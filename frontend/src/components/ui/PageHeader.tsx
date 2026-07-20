@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/ui/UserMenu";
@@ -30,7 +31,16 @@ export function PageHeader({
         <div className="flex items-center gap-3">
           {children}
           <ThemeToggle />
-          {user && <UserMenu displayName={user.displayName} />}
+          {user ? (
+            <UserMenu displayName={user.displayName} />
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-brand-600 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+            >
+              Log in
+            </Link>
+          )}
         </div>
       </div>
     </header>

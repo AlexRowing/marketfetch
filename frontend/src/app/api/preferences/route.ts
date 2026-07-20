@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
@@ -7,8 +8,13 @@ const KINDS: PreferenceKind[] = ["brand", "size", "color", "category_budget"];
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
+  // Guests can add preferences in the UI, but they aren't saved: hand back a
+  // throwaway id so the optimistic chip sticks for the session without writing.
   if (!user) {
-    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+    return NextResponse.json(
+      { id: `guest-${crypto.randomUUID()}` },
+      { status: 200 }
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -41,8 +47,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const user = await getSessionUser();
+  // Guests have nothing persisted to delete; treat removal as a no-op success.
   if (!user) {
-    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+    return NextResponse.json({ ok: true, guest: true }, { status: 200 });
   }
 
   const body = await request.json().catch(() => null);

@@ -11,6 +11,14 @@ import { query } from "@/lib/db";
 
 const COOKIE = "marketfetch.session";
 const SESSION_DAYS = 30;
+
+/**
+ * Stand-in id for logged-out visitors browsing as guests. It's a valid UUID
+ * that matches no real user, so read queries keyed on it return an
+ * unpersonalized view (no taste, saves, rejects, or preferences) with no
+ * signature changes. Writes never use it - the write routes no-op for guests.
+ */
+export const ANON_USER_ID = "00000000-0000-0000-0000-000000000000";
 const SCRYPT = { N: 16384, r: 8, p: 1, keyLen: 64 };
 
 function secret(): string {

@@ -16,8 +16,15 @@ const MAX_HISTORY = 20;
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
+  // Guests can open the chat, but the agent's value is its memory of your
+  // taste, saves, and prices - which needs an account. Answer as the agent
+  // and nudge sign-in rather than running a memoryless turn.
   if (!user) {
-    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+    return NextResponse.json({
+      reply:
+        "You're chatting as a guest, so I can't save anything or recall your history yet. Log in and I'll remember your taste, saves, and the price history of everything I've seen. In the meantime, the whole feed is live to browse.",
+      toolCalls: [],
+    });
   }
 
   const body = await request.json().catch(() => null);

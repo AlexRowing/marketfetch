@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { PriceHistoryChart } from "@/components/listings/PriceHistoryChart";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { SourceBadgeLarge } from "@/components/listings/SourceBadge";
@@ -12,7 +12,7 @@ import {
 import { getListingDetail, MIN_SIMILAR } from "@/lib/listings";
 import { formatSource } from "@/lib/format";
 import { query } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -31,17 +31,22 @@ export default async function ListingPage({
 }) {
   const { id } = await params;
 
+  // Public page: guests can view listings; only logged-in users get saved
+  // state and have their view logged as Buyer Memory.
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  const viewerId = user?.id ?? ANON_USER_ID;
 
-  const listing = await getListingDetail(id, user.id).catch(() => null);
+  const listing = await getListingDetail(id, viewerId).catch(() => null);
   if (!listing) notFound();
 
-  // Viewing history is Buyer Memory signal - log it, don't block on failure.
-  query(
-    `INSERT INTO interactions (user_id, listing_id, kind) VALUES ($1, $2, 'view')`,
-    [user.id, listing.id]
-  ).catch(() => {});
+  // Viewing history is Buyer Memory signal - log it for real users only, and
+  // don't block on failure.
+  if (user) {
+    query(
+      `INSERT INTO interactions (user_id, listing_id, kind) VALUES ($1, $2, 'view')`,
+      [user.id, listing.id]
+    ).catch(() => {});
+  }
 
   // Deal verdict vs the median of embedding-similar listings. The % pill only
   // shows when the cohort is price-coherent (tight interquartile spread) -

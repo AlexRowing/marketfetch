@@ -1,12 +1,12 @@
-import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SparkIcon } from "@/components/ui/icons";
 import { getSessionUser } from "@/lib/auth";
 
 export default async function ChatPage() {
+  // Public: guests can chat, but the agent has no saved memory for them
+  // (the chat route answers as a guest and nothing persists).
   const user = await getSessionUser();
-  if (!user) redirect("/login");
 
   return (
     <div className="flex flex-1 flex-col bg-canvas font-sans">

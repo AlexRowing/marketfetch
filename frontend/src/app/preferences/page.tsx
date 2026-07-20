@@ -1,16 +1,15 @@
-import { redirect } from "next/navigation";
 import { PreferencesPanel } from "@/components/preferences/PreferencesPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { GuestBanner } from "@/components/ui/GuestBanner";
 import { getPreferences } from "@/lib/preferences";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function PreferencesPage() {
+  // Public: guests see an empty panel and can tinker, but nothing persists.
   const user = await getSessionUser();
-  if (!user) redirect("/login");
-
-  const prefs = await getPreferences(user.id);
+  const prefs = await getPreferences(user?.id ?? ANON_USER_ID);
 
   return (
     <div className="flex flex-1 flex-col bg-canvas font-sans">
@@ -28,6 +27,7 @@ export default async function PreferencesPage() {
             activity.
           </p>
         </header>
+        {!user && <GuestBanner className="mb-6" />}
         <PreferencesPanel initial={prefs} />
       </main>
     </div>
