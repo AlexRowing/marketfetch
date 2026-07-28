@@ -93,7 +93,7 @@ function Chip({ pref, onRemove }: { pref: Preference; onRemove: () => void }) {
     <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-3 pr-1.5 text-sm text-ink shadow-sm">
       {pref.value}
       {pref.numericValue !== null && (
-        <span className="text-ink-muted">€{pref.numericValue}</span>
+        <span className="text-ink-muted">${pref.numericValue}</span>
       )}
       {pref.source === "inferred" && (
         <span title="Learned by the agent" className="flex items-center">
@@ -188,7 +188,7 @@ function Section({
           <input
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="€ max"
+            placeholder="$ max"
             inputMode="decimal"
             aria-label="Budget amount"
             className="w-20 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"

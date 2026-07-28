@@ -2,21 +2,14 @@
 
 import { useState } from "react";
 import type { PricePoint } from "@/lib/listings";
+import { formatPrice } from "@/lib/format";
 
 const W = 640;
 const H = 220;
 const PAD = { top: 16, right: 72, bottom: 28, left: 44 };
 
-function formatPrice(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-  }).format(amount);
-}
-
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IE", {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
   });
@@ -27,13 +20,7 @@ function formatDate(iso: string) {
  * dark), matching the app's indigo; 2px line, 8px markers with a surface ring,
  * per-point hover tooltip, direct label on the latest price only.
  */
-export function PriceHistoryChart({
-  points,
-  currency,
-}: {
-  points: PricePoint[];
-  currency: string;
-}) {
+export function PriceHistoryChart({ points }: { points: PricePoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
 
   if (points.length < 2) {
@@ -79,7 +66,7 @@ export function PriceHistoryChart({
           viewBox={`0 0 ${W} ${H}`}
           className="w-full text-brand-600 dark:text-brand-400"
           role="img"
-          aria-label={`Price history: ${points.length} snapshots from ${formatPrice(points[0].price, currency)} to ${formatPrice(points[last].price, currency)}`}
+          aria-label={`Price history: ${points.length} snapshots from ${formatPrice(points[0].price)} to ${formatPrice(points[last].price)}`}
         >
           {/* recessive grid + tick labels */}
           {gridPrices.map((gp, i) => (
@@ -170,7 +157,7 @@ export function PriceHistoryChart({
             y={y(points[last].price) + 4}
             className="fill-ink text-[13px] font-semibold"
           >
-            {formatPrice(points[last].price, currency)}
+            {formatPrice(points[last].price)}
           </text>
         </svg>
 
@@ -182,7 +169,7 @@ export function PriceHistoryChart({
               top: `${(y(points[hover].price) / H) * 100 - 4}%`,
             }}
           >
-            {formatPrice(points[hover].price, currency)} ·{" "}
+            {formatPrice(points[hover].price)} ·{" "}
             {formatDate(points[hover].capturedAt)}
           </div>
         )}
@@ -201,7 +188,7 @@ export function PriceHistoryChart({
           {points.map((p) => (
             <tr key={p.capturedAt}>
               <td>{formatDate(p.capturedAt)}</td>
-              <td>{formatPrice(p.price, currency)}</td>
+              <td>{formatPrice(p.price)}</td>
             </tr>
           ))}
         </tbody>

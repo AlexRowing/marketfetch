@@ -54,7 +54,7 @@ export default async function Home() {
             </p>
           </div>
           <span className="hidden shrink-0 pb-1 font-mono text-xs tracking-tight text-ink-soft sm:block">
-            {total.toLocaleString("en-IE")} listings
+            {total.toLocaleString("en-US")} listings
           </span>
         </header>
         {!user && <GuestBanner className="mb-8" />}

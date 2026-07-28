@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatSource } from "@/lib/format";
+import { formatPrice, formatSource } from "@/lib/format";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { SourceBadge } from "@/components/listings/SourceBadge";
 import {
@@ -12,14 +12,6 @@ import {
   TrendDownIcon,
 } from "@/components/ui/icons";
 import type { FeedItem } from "@/lib/listings";
-
-function formatPrice(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-  }).format(amount);
-}
 
 export function ListingCard({
   item,
@@ -134,7 +126,7 @@ export function ListingCard({
         )}
         <div className="mt-1.5 flex items-baseline justify-between gap-2">
           <span className="font-serif text-xl font-semibold tracking-tight tabular-nums text-ink">
-            {formatPrice(item.currentPrice, item.currency)}
+            {formatPrice(item.currentPrice)}
           </span>
           <span className="shrink-0 text-[11px] text-ink-soft">
             {item.listingAgeDays}d ago

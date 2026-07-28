@@ -64,7 +64,7 @@ function DealCard({ deal }: { deal: Deal }) {
           {deal.title}
         </h3>
         <span className="font-serif text-xl font-semibold tracking-tight tabular-nums text-ink">
-          {formatPrice(deal.currentPrice, deal.currency)}
+          {formatPrice(deal.currentPrice)}
         </span>
         <p className="mt-1 line-clamp-2 text-xs font-medium leading-4 text-brand-700 dark:text-brand-400">
           {deal.reason}

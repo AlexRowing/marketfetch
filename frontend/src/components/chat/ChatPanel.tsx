@@ -231,7 +231,7 @@ export function ChatPanel() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Find me a Carhartt jacket under €60…"
+          placeholder="Find me a Carhartt jacket under $60…"
           aria-label="Message the agent"
           className="flex-1 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
         />

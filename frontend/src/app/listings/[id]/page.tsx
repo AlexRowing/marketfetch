@@ -10,19 +10,11 @@ import {
   TrendUpIcon,
 } from "@/components/ui/icons";
 import { getListingDetail, MIN_SIMILAR } from "@/lib/listings";
-import { formatSource } from "@/lib/format";
+import { formatPrice, formatSource } from "@/lib/format";
 import { query } from "@/lib/db";
 import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
-
-function formatPrice(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-  }).format(amount);
-}
 
 export default async function ListingPage({
   params,
@@ -125,7 +117,7 @@ export default async function ListingPage({
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
             <span className="font-serif text-[2.75rem] font-semibold leading-none tracking-tight text-ink">
-              {formatPrice(listing.currentPrice, listing.currency)}
+              {formatPrice(listing.currentPrice)}
             </span>
             {!listing.isActive && (
               <span className="inline-flex items-center rounded-full bg-ink px-3 py-1 text-sm font-semibold uppercase tracking-wide text-canvas">
@@ -169,11 +161,11 @@ export default async function ListingPage({
               {cohortOk ? (
                 <>
                   <dd className="mt-0.5 text-base font-semibold text-ink">
-                    {formatPrice(similar.median, listing.currency)}
+                    {formatPrice(similar.median)}
                   </dd>
                   <p className="mt-0.5 text-xs text-ink-soft">
-                    {formatPrice(similar.p25, listing.currency)}–
-                    {formatPrice(similar.p75, listing.currency)} ·{" "}
+                    {formatPrice(similar.p25)}–
+                    {formatPrice(similar.p75)} ·{" "}
                     {similar.count} items
                   </p>
                 </>
@@ -229,10 +221,7 @@ export default async function ListingPage({
           <h2 className="mb-3 font-serif text-lg font-semibold tracking-tight text-ink">
             Price history
           </h2>
-          <PriceHistoryChart
-            points={listing.priceHistory}
-            currency={listing.currency}
-          />
+          <PriceHistoryChart points={listing.priceHistory} />
         </section>
 
         <section>
