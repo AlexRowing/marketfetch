@@ -6,6 +6,7 @@ import {
   type ToolResultContentBlock,
 } from "@aws-sdk/client-bedrock-runtime";
 import { connectMcp } from "@/lib/mcp";
+import { query } from "@/lib/db";
 
 const bedrock = new BedrockRuntimeClient({
   region: process.env.AWS_REGION ?? "us-east-1",
@@ -13,6 +14,80 @@ const bedrock = new BedrockRuntimeClient({
 
 const MODEL_ID = process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-sonnet-4-6";
 const MAX_TOOL_ROUNDS = 8;
+
+/**
+ * A first-class tool for persisting a buyer preference, handled by us directly
+ * (not the MCP SQL bridge) so a remembered preference is ALWAYS written the same
+ * way the Preferences UI writes it - and therefore re-ranks the feed. Letting
+ * the model hand-write INSERTs was unreliable; this makes saving deterministic.
+ */
+const PREFERENCE_KINDS = ["brand", "size", "color", "category_budget"] as const;
+type PreferenceKind = (typeof PREFERENCE_KINDS)[number];
+const SAVE_PREFERENCE = "save_preference";
+
+const savePreferenceTool: Tool = {
+  toolSpec: {
+    name: SAVE_PREFERENCE,
+    description:
+      "Persist a lasting buyer preference to the user's saved Preferences. " +
+      "This is the ONLY correct way to remember a preference - it writes to the " +
+      "same store the Preferences page uses, so it also re-ranks the user's feed. " +
+      "Call it whenever the user states something durable they want remembered: a " +
+      "brand/maker they like, a clothing/shoe size, a colour, or a per-category " +
+      "spending budget. Do not use it for one-off search filters.",
+    inputSchema: {
+      json: {
+        type: "object",
+        properties: {
+          kind: {
+            type: "string",
+            enum: [...PREFERENCE_KINDS],
+            description:
+              "brand | size | color | category_budget (a max price for a category).",
+          },
+          value: {
+            type: "string",
+            description:
+              "The brand, size, or colour. For category_budget, the category name (e.g. 'jackets').",
+          },
+          numericValue: {
+            type: ["number", "null"],
+            description:
+              "Only for category_budget: the maximum price in US dollars. Null otherwise.",
+          },
+        },
+        required: ["kind", "value"],
+      },
+    },
+  },
+};
+
+/** Write one preference exactly as /api/preferences does (source='inferred'). */
+async function savePreference(
+  userId: string,
+  input: Record<string, unknown>,
+): Promise<string> {
+  const kind = input.kind;
+  const value = typeof input.value === "string" ? input.value.trim() : "";
+  const numericValue =
+    typeof input.numericValue === "number" ? input.numericValue : null;
+  if (
+    typeof kind !== "string" ||
+    !PREFERENCE_KINDS.includes(kind as PreferenceKind) ||
+    value === ""
+  ) {
+    return `error: invalid preference - kind must be one of ${PREFERENCE_KINDS.join(", ")} and value must be non-empty`;
+  }
+  await query(
+    `INSERT INTO user_preferences (user_id, kind, value, numeric_value, source)
+     VALUES ($1, $2, $3, $4, 'inferred')
+     ON CONFLICT (user_id, kind, value) DO UPDATE SET numeric_value = EXCLUDED.numeric_value`,
+    [userId, kind, value, numericValue],
+  );
+  return `saved to Preferences: ${kind} = ${value}${
+    numericValue !== null ? ` ($${numericValue})` : ""
+  }. The feed will re-rank to favour this.`;
+}
 
 /** One tool invocation the agent made, surfaced to the UI for transparency. */
 export interface AgentToolCall {
@@ -64,8 +139,10 @@ When you answer:
 - Only ever name or link a listing that came back from a query in THIS turn.
   Never guess or reuse an id, and never invent listings or prices. If memory has
   no answer, say so plainly instead of making something up.
-- When the user states a new lasting preference (brand, size, color, budget),
-  save it: insert into user_preferences with source='inferred', then confirm.
+- When the user states a lasting preference (a brand, size, colour, or a
+  per-category budget), call the save_preference tool to remember it - never
+  write it with raw SQL. Saving this way also re-ranks their feed. Then confirm
+  in one short line what you saved.
 - Keep replies short and conversational; this is a chat UI.
 - Finish the job before replying: run every query you need first. Never end
   your reply with "let me search/check" - the reply IS the final answer.`;
@@ -85,16 +162,20 @@ export async function runAgent(
 
   try {
     const { tools: mcpTools } = await mcp.listTools();
-    const tools: Tool[] = mcpTools.map(
-      (t) =>
-        ({
-          toolSpec: {
-            name: t.name,
-            description: t.description ?? t.name,
-            inputSchema: { json: t.inputSchema as Record<string, unknown> },
-          },
-        }) as Tool,
-    );
+    // Our deterministic save_preference tool plus the MCP server's SQL tools.
+    const tools: Tool[] = [
+      savePreferenceTool,
+      ...mcpTools.map(
+        (t) =>
+          ({
+            toolSpec: {
+              name: t.name,
+              description: t.description ?? t.name,
+              inputSchema: { json: t.inputSchema as Record<string, unknown> },
+            },
+          }) as Tool,
+      ),
+    ];
 
     const messages: Message[] = [
       ...history.map((m) => ({
@@ -131,10 +212,23 @@ export async function runAgent(
       for (const block of output.content ?? []) {
         if (!block.toolUse?.toolUseId || !block.toolUse.name) continue;
         toolCalls.push({ tool: block.toolUse.name, input: block.toolUse.input });
+        const input = (block.toolUse.input ?? {}) as Record<string, unknown>;
         try {
+          // save_preference is ours - handle it directly instead of via MCP.
+          if (block.toolUse.name === SAVE_PREFERENCE) {
+            const text = await savePreference(userId, input);
+            results.push({
+              toolResult: {
+                toolUseId: block.toolUse.toolUseId,
+                content: [{ text }],
+                status: text.startsWith("error:") ? "error" : "success",
+              },
+            });
+            continue;
+          }
           const result = await mcp.callTool({
             name: block.toolUse.name,
-            arguments: (block.toolUse.input ?? {}) as Record<string, unknown>,
+            arguments: input,
           });
           const text = (result.content as { type: string; text?: string }[])
             .map((c) => (c.type === "text" ? c.text ?? "" : ""))

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SparkIcon } from "@/components/ui/icons";
 
 // Turn the agent's Markdown links - [label](/listings/id) or [label](https://…)
@@ -73,6 +74,7 @@ export function ChatPanel() {
   // greeting never clobbers real history in storage on first render.
   const [hydrated, setHydrated] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Keep the newest message in view: on restore, on every new message, and
   // when the thinking indicator appears. Scrolls the list itself (not
@@ -159,6 +161,15 @@ export function ChatPanel() {
           isError: !res.ok,
         },
       ]);
+      // If the agent saved a preference this turn, re-rank the feed live so the
+      // change is visible without a manual reload.
+      const savedPref =
+        res.ok &&
+        Array.isArray(data.toolCalls) &&
+        data.toolCalls.some(
+          (c: { tool?: string }) => c.tool === "save_preference",
+        );
+      if (savedPref) router.refresh();
     } catch {
       setMessages((m) => [
         ...m,
