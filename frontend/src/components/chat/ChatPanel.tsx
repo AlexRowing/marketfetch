@@ -1,7 +1,51 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { SparkIcon } from "@/components/ui/icons";
+
+// Turn the agent's Markdown links - [label](/listings/id) or [label](https://…)
+// - into clickable links, leaving all other text untouched. We only honour
+// in-app paths ("/…") and http(s) URLs so a stray href can't smuggle in
+// javascript:. In-app links use next/link for client-side nav; external ones
+// open in a new tab. Everything else renders as plain text.
+const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function renderMessage(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  LINK_RE.lastIndex = 0;
+  while ((m = LINK_RE.exec(text)) !== null) {
+    const [full, label, href] = m;
+    const internal = href.startsWith("/");
+    const external = href.startsWith("http://") || href.startsWith("https://");
+    if (!internal && !external) continue; // skip unsafe/relative hrefs, keep as text
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const className =
+      "font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700";
+    nodes.push(
+      internal ? (
+        <Link key={m.index} href={href} className={className}>
+          {label}
+        </Link>
+      ) : (
+        <a
+          key={m.index}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={className}
+        >
+          {label}
+        </a>
+      ),
+    );
+    last = m.index + full.length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes.length > 0 ? nodes : [text];
+}
 
 interface Message {
   role: "user" | "agent";
@@ -161,7 +205,7 @@ export function ChatPanel() {
                   : "border border-line bg-surface text-ink shadow-sm"
               }`}
             >
-              {m.text}
+              {m.role === "agent" ? renderMessage(m.text) : m.text}
             </div>
             {m.role === "agent" && (m.toolCallCount ?? 0) > 0 && (
               <p className="mt-1 inline-flex items-center gap-1 pl-2 text-xs text-ink-soft">
