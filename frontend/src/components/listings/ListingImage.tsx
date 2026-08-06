@@ -10,6 +10,9 @@ const CATEGORY_EMOJI: Record<string, string> = {
   fleeces: "🧸",
   accessories: "🧢",
   shirts: "👔",
+  hoodies: "👕",
+  bags: "🎒",
+  electronics: "📷",
 };
 
 /**
