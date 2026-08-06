@@ -114,8 +114,7 @@ The database is "defaultdb". Schema:
 - user_taste_embeddings(user_id, embedding VECTOR) - the user's taste profile.
 - listings(id, source, external_id, title, description, brand, category, size,
   color, condition, image_url, url, current_price, currency, first_seen_at,
-  last_seen_at, is_active, embedding VECTOR) - the app shows all prices in USD;
-  talk about money in dollars ($) and never mention euros.
+  last_seen_at, is_active, embedding VECTOR) - current_price is always USD.
 - price_snapshots(id, listing_id, price, currency, captured_at) - Price Memory,
   append-only history.
 - interactions(id, user_id, listing_id, kind view|save|reject|unsave, created_at)

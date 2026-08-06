@@ -47,7 +47,8 @@ export function createDiscogsAdapter(token: string): MarketplaceAdapter {
   }
 
   async function fetchStats(releaseId: string): Promise<MarketStats | null> {
-    const res = await throttledGet(`/marketplace/stats/${releaseId}?curr_abbr=EUR`);
+    // USD, live-quoted by Discogs — matches the rest of the app's currency.
+    const res = await throttledGet(`/marketplace/stats/${releaseId}?curr_abbr=USD`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`discogs stats ${releaseId} failed: HTTP ${res.status}`);
     return (await res.json()) as MarketStats;

@@ -26,5 +26,5 @@ INSERT INTO user_preferences (id, user_id, kind, value, numeric_value, source) V
   ('c0000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'brand', 'Levi''s', NULL, 'explicit'),
   ('c0000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'size', 'M', NULL, 'explicit'),
   ('c0000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'color', 'black', NULL, 'explicit'),
-  ('c0000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'category_budget', 'jackets', 60.00, 'explicit')
+  ('c0000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'category_budget', 'jackets', 69.50, 'explicit')
 ON CONFLICT (user_id, kind, value) DO NOTHING;

@@ -8,10 +8,10 @@ export function formatSource(source: string): string {
 }
 
 /**
- * Money in USD, e.g. 45 → "$45", 45.5 → "$45.50". Listings are shown in
- * dollars regardless of the source marketplace's own currency, so the whole
- * app speaks one currency. The stored `currency` column is intentionally
- * ignored here.
+ * Money in USD, e.g. 45 → "$45", 45.5 → "$45.50". Every stored price is USD
+ * end to end - marketplace adapters request USD directly, and the one-time
+ * EUR→USD backfill (2026-08-06, rate 1.1542) converted everything already in
+ * the DB - so the `currency` column and this formatter always agree.
  */
 export function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-US", {

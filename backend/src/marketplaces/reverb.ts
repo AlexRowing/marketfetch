@@ -68,8 +68,9 @@ export function createReverbAdapter(token: string): MarketplaceAdapter {
     "Accept-Version": "3.0",
     Accept: "application/hal+json",
     "Content-Type": "application/hal+json",
-    // Keep the whole app in EUR: Reverb converts prices server-side.
-    "X-Display-Currency": "EUR",
+    // Keep the whole app in USD: Reverb converts prices server-side, so we
+    // get a real live-quoted dollar price with no manual conversion.
+    "X-Display-Currency": "USD",
   };
 
   return {

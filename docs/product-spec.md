@@ -40,7 +40,7 @@ Preferences are stored both as **structured rows** (sizes, budgets — used as h
 3. **User interactions** — save ❤️ / reject ✖️ / view tracking on listings.
 4. **Buyer Memory** — preferences page + interactions feed back into stored preferences and taste embeddings.
 5. **Price Memory** — price history sparkline on each listing detail page; deal badge ("X% below market").
-6. **AI recommendations** — chat with the agent ("find me a Carhartt jacket under €60"); agent uses the CockroachDB MCP Server to query both memories and explain *why* each result fits.
+6. **AI recommendations** — chat with the agent ("find me a Carhartt jacket under $60"); agent uses the CockroachDB MCP Server to query both memories and explain *why* each result fits.
 
 ## Demo script (target)
 

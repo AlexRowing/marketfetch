@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS listings (
     image_url     STRING,
     url           STRING,
     current_price DECIMAL(10,2) NOT NULL,     -- denormalized latest snapshot
-    currency      STRING NOT NULL DEFAULT 'EUR',
+    currency      STRING NOT NULL DEFAULT 'USD',
     first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     is_active     BOOL NOT NULL DEFAULT true,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS price_snapshots (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     listing_id  UUID NOT NULL REFERENCES listings (id),
     price       DECIMAL(10,2) NOT NULL,
-    currency    STRING NOT NULL DEFAULT 'EUR',
+    currency    STRING NOT NULL DEFAULT 'USD',
     captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     INDEX price_snapshots_listing_time_idx (listing_id, captured_at DESC)
 );
