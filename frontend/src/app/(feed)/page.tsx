@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FeedGrid } from "@/components/listings/FeedGrid";
+import { DailyBriefing } from "@/components/listings/DailyBriefing";
 import { DealsBrief } from "@/components/listings/DealsBrief";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GuestBanner } from "@/components/ui/GuestBanner";
@@ -9,6 +10,7 @@ import {
   getFeedListings,
 } from "@/lib/listings";
 import { getDealsForUser } from "@/lib/deals";
+import { getBriefing } from "@/lib/briefing";
 import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 // The feed reads live data from CockroachDB on every request.
@@ -21,12 +23,13 @@ export default async function Home() {
   const viewerId = user?.id ?? ANON_USER_ID;
 
   // First taste-ranked page; FeedGrid pulls the rest via /api/listings.
-  // Deals brief is the agent's proactive pick, computed over the whole catalog.
-  const [listings, total, categories, deals] = await Promise.all([
+  // Deals + briefing are the agent's proactive read, computed over the catalog.
+  const [listings, total, categories, deals, briefing] = await Promise.all([
     getFeedListings(viewerId),
     countFeedListings(viewerId),
     getFeedCategories(viewerId),
     getDealsForUser(viewerId),
+    getBriefing(),
   ]);
 
   return (
@@ -49,8 +52,8 @@ export default async function Home() {
             </h1>
             <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               {user
-                ? "Deals ranked by your taste - the agent surfaces what's worth acting on."
-                : "A live look at what the agent is tracking. Log in to rank it by your taste."}
+                ? "The agent is watching the used-gear market for you - ranked by your taste, with a read on every price."
+                : "A live look at the used-gear market the agent is tracking. Log in to rank it by your taste."}
             </p>
           </div>
           <span className="hidden shrink-0 pb-1 font-mono text-xs tracking-tight text-ink-soft sm:block">
@@ -58,6 +61,7 @@ export default async function Home() {
           </span>
         </header>
         {!user && <GuestBanner className="mb-8" />}
+        <DailyBriefing briefing={briefing} deals={deals} personalised={!!user} />
         <DealsBrief deals={deals} />
         <FeedGrid
           initialItems={listings}

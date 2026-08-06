@@ -142,15 +142,19 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
       if (drop === null && vs === null) return null;
 
       // Lead with the stronger signal; add a Buyer-Memory hook when one fits.
+      // Mirror the feed-card phrasing so the two surfaces read as one agent.
       const useVs = vs !== null && (drop === null || Math.abs(vs) >= Math.abs(drop));
-      const priceLead = useVs
-        ? `${Math.round(-(vs as number) * 100)}% below similar listings`
-        : `Down ${Math.round(-(drop as number) * 100)}% since listed`;
+      const priceLead =
+        useVs && median
+          ? `Usually ~$${Math.round(median)} · ${Math.round(-(vs as number) * 100)}% under`
+          : useVs
+            ? `${Math.round(-(vs as number) * 100)}% under similar listings`
+            : `Seller cut it ${Math.round(-(drop as number) * 100)}% since listing`;
 
       const budget = budgets.get(r.category.toLowerCase());
       let hook: string | null = null;
       if (r.brand && brands.has(r.brand.toLowerCase())) {
-        hook = `${r.brand} is a brand you follow`;
+        hook = `${r.brand} is a maker you follow`;
       } else if (budget !== undefined && price <= budget) {
         hook = `within your ${r.category} budget`;
       }

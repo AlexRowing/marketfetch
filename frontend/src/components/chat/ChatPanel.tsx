@@ -63,7 +63,7 @@ interface Message {
 export const CHAT_STORAGE_KEY = "marketfetch.chat";
 const GREETING: Message = {
   role: "agent",
-  text: "Hi! Ask me about deals - I remember your preferences, saves, and the price history of every listing I've seen.",
+  text: "I watch the used-gear market - guitars, amps, pedals, synths, records - and I remember your taste, your saves, and every price I've seen. Ask me what's worth buying, or whether a listing is a good price.",
 };
 
 export function ChatPanel() {
@@ -242,7 +242,7 @@ export function ChatPanel() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Find me a Carhartt jacket under $60…"
+          placeholder="Is that Telecaster a good price?"
           aria-label="Message the agent"
           className="flex-1 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink placeholder:text-ink-soft focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
         />

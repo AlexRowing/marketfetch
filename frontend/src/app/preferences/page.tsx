@@ -22,8 +22,9 @@ export default async function PreferencesPage() {
             Buyer Memory
           </h1>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-muted">
-            What the agent knows about you. Everything here shapes your feed and
-            recommendations - items marked with a spark were learned from your
+            What the agent knows about you - the makers you follow, finishes you
+            like, and your budget per instrument type. Everything here shapes your
+            feed and its advice; items marked with a spark were learned from your
             activity.
           </p>
         </header>

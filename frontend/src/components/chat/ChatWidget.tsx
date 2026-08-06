@@ -33,7 +33,7 @@ export function ChatWidget() {
                   Agent
                 </h2>
                 <p className="mt-1 text-[11px] text-ink-soft">
-                  Knows your taste &amp; prices
+                  Reads the used-gear market for you
                 </p>
               </div>
             </div>

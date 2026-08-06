@@ -9,6 +9,7 @@ import {
   ArrowUpRightIcon,
   CloseIcon,
   HeartIcon,
+  SparkIcon,
   TrendDownIcon,
 } from "@/components/ui/icons";
 import type { FeedItem } from "@/lib/listings";
@@ -132,6 +133,12 @@ export function ListingCard({
             {item.listingAgeDays}d ago
           </span>
         </div>
+        {item.insight && (
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium leading-4 text-brand-700 dark:text-brand-400">
+            <SparkIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{item.insight}</span>
+          </p>
+        )}
         {item.url && (
           <a
             href={item.url}

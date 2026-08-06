@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { formatPrice } from "@/lib/format";
 
 /** A listing shaped for the feed, with Price Memory context attached. */
 export interface FeedItem {
@@ -23,6 +24,23 @@ export interface FeedItem {
   isSaved: boolean;
   /** False once the listing is sold / delisted on the source marketplace. */
   isActive: boolean;
+  /**
+   * Median of embedding-similar listings, when that cohort is price-coherent
+   * (tight interquartile spread); null otherwise. The "usually sells around $X".
+   */
+  marketMedian: number | null;
+  /** Current price vs marketMedian (negative = below). Null if no coherent cohort. */
+  vsMarketPct: number | null;
+  /**
+   * How many times the seller has lowered the price across its snapshot history.
+   * 2+ is a real "motivated seller" signal (they keep cutting).
+   */
+  priceCuts: number;
+  /**
+   * One short, honest line of agent context for the card, or null when there's
+   * nothing worth saying. Computed server-side so the client stays presentational.
+   */
+  insight: string | null;
 }
 
 /** Which listings a feed query returns. */
@@ -45,6 +63,49 @@ interface FeedRow {
   first_price: string | null;
   save_state: string | null;
   is_active: boolean;
+  // Similar-items price stats (present on the feed query, absent on detail).
+  sim_median: number | null;
+  sim_p25: number | null;
+  sim_p75: number | null;
+  sim_n: number | null;
+  // Number of downward price moves across the listing's snapshot history.
+  price_cuts: number | null;
+}
+
+/** Cohort is too wide (or too thin) to trust its median as "what these sell for". */
+const CARD_MIN_SIMILAR = 4;
+
+/**
+ * One honest line of context for a feed card, or null. Order matters: surface
+ * the most decision-useful signal, one per card, so cards stay uncluttered.
+ * The green "-X%" badge already shows the drop amount, so the drop lines here
+ * speak to seller behaviour ("keeps cutting the price") rather than repeating it.
+ */
+function feedInsight(opts: {
+  isActive: boolean;
+  priceChangePct: number | null;
+  vsMarketPct: number | null;
+  marketMedian: number | null;
+  priceCuts: number;
+  listingAgeDays: number;
+}): string | null {
+  const { isActive, priceChangePct, vsMarketPct, marketMedian, priceCuts, listingAgeDays } =
+    opts;
+  if (!isActive) return null;
+  if (vsMarketPct !== null && marketMedian !== null && vsMarketPct <= -0.08) {
+    return `Usually ~${formatPrice(marketMedian)} · ${Math.round(-vsMarketPct * 100)}% under`;
+  }
+  // Repeated cuts are the strongest "will take an offer" tell.
+  if (priceCuts >= 2) {
+    return `Price cut ${priceCuts}× · seller likely open to offers`;
+  }
+  if (priceCuts === 1 || (priceChangePct !== null && priceChangePct <= -0.05)) {
+    return "Seller has already cut the price once";
+  }
+  if (listingAgeDays >= 60) {
+    return `Up ${listingAgeDays} days · seller may take an offer`;
+  }
+  return null;
 }
 
 export interface PricePoint {
@@ -172,6 +233,19 @@ export async function getListingDetail(
         : null,
     isSaved: r.save_state === "save",
     isActive: r.is_active,
+    // Feed-card context fields (the detail page renders its own richer Price
+    // Memory panel, so it doesn't use `insight`).
+    marketMedian: similar ? similar.median : null,
+    vsMarketPct:
+      similar && similar.count >= MIN_SIMILAR && similar.median > 0
+        ? (currentPrice - similar.median) / similar.median
+        : null,
+    priceCuts: historyRows.reduce(
+      (n, h, i) =>
+        i > 0 && Number(h.price) < Number(historyRows[i - 1].price) ? n + 1 : n,
+      0
+    ),
+    insight: null,
     similar,
     deltaVsMarket:
       similar && similar.count >= MIN_SIMILAR && similar.median > 0
@@ -187,6 +261,29 @@ export async function getListingDetail(
 function mapFeedRow(r: FeedRow): FeedItem {
   const currentPrice = Number(r.current_price);
   const firstPrice = r.first_price === null ? null : Number(r.first_price);
+  const priceChangePct =
+    firstPrice && firstPrice > 0 ? (currentPrice - firstPrice) / firstPrice : null;
+  const listingAgeDays = Number(r.listing_age_days);
+
+  // Trust the similar-items median only when the cohort is real (>= a few
+  // members) and price-coherent (tight IQR). Same guard as the detail page and
+  // deals, so a lone vintage piece among cheap comparables can't fake a "deal".
+  const simMedian = r.sim_median === null ? null : Number(r.sim_median);
+  const simP25 = r.sim_p25 === null ? null : Number(r.sim_p25);
+  const simP75 = r.sim_p75 === null ? null : Number(r.sim_p75);
+  const simN = r.sim_n === null ? 0 : Number(r.sim_n);
+  const coherent =
+    simMedian !== null &&
+    simP25 !== null &&
+    simP75 !== null &&
+    simN >= CARD_MIN_SIMILAR &&
+    simMedian > 0 &&
+    (simP75 - simP25) / simMedian <= 0.5;
+  const marketMedian = coherent ? simMedian : null;
+  const vsMarketPct =
+    coherent && simMedian ? (currentPrice - simMedian) / simMedian : null;
+  const priceCuts = r.price_cuts === null ? 0 : Number(r.price_cuts);
+
   return {
     id: r.id,
     title: r.title,
@@ -200,13 +297,21 @@ function mapFeedRow(r: FeedRow): FeedItem {
     url: r.url,
     currentPrice,
     currency: r.currency,
-    listingAgeDays: Number(r.listing_age_days),
-    priceChangePct:
-      firstPrice && firstPrice > 0
-        ? (currentPrice - firstPrice) / firstPrice
-        : null,
+    listingAgeDays,
+    priceChangePct,
     isSaved: r.save_state === "save",
     isActive: r.is_active,
+    marketMedian,
+    vsMarketPct,
+    priceCuts,
+    insight: feedInsight({
+      isActive: r.is_active,
+      priceChangePct,
+      vsMarketPct,
+      marketMedian,
+      priceCuts,
+      listingAgeDays,
+    }),
   };
 }
 
@@ -258,7 +363,9 @@ async function queryFeed(
                 END
               )
               FROM user_preferences p WHERE p.user_id = $1
-            ), 0) AS pref_boost
+            ), 0) AS pref_boost,
+            sm.sim_median, sm.sim_p25, sm.sim_p75, sm.sim_n,
+            pc.price_cuts
      FROM listings l
      LEFT JOIN user_taste_embeddings t ON t.user_id = $1
      LEFT JOIN LATERAL (
@@ -275,6 +382,32 @@ async function queryFeed(
        ORDER BY created_at DESC
        LIMIT 1
      ) ss ON true
+     -- "Usually sells around $X" context: median/IQR of the 15 nearest listings
+     -- by embedding distance (sold included). Same shape as the deals + detail
+     -- comparables; cheap at catalog scale. mapFeedRow gates on coherence.
+     LEFT JOIN LATERAL (
+       SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY o.price) AS sim_median,
+              percentile_cont(0.25) WITHIN GROUP (ORDER BY o.price) AS sim_p25,
+              percentile_cont(0.75) WITHIN GROUP (ORDER BY o.price) AS sim_p75,
+              count(*)::INT AS sim_n
+       FROM (
+         SELECT comp.current_price::FLOAT8 AS price
+         FROM listings comp
+         WHERE comp.id <> l.id AND comp.source <> 'seed'
+           AND (comp.embedding <=> l.embedding) < 0.5
+         ORDER BY comp.embedding <=> l.embedding ASC
+         LIMIT 15
+       ) o
+     ) sm ON true
+     -- Motivated-seller signal: how many times the price stepped DOWN across the
+     -- listing's snapshot history. 2+ = a seller who keeps cutting.
+     LEFT JOIN LATERAL (
+       SELECT count(*) FILTER (WHERE h.price < h.prev)::INT AS price_cuts
+       FROM (
+         SELECT price, lag(price) OVER (ORDER BY captured_at) AS prev
+         FROM price_snapshots WHERE listing_id = l.id
+       ) h
+     ) pc ON true
      WHERE l.is_active = $5
        -- Hide hand-curated demo rows; only real ingested marketplace listings.
        AND l.source <> 'seed'
