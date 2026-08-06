@@ -1,5 +1,5 @@
 /**
- * Shared domain types — the TypeScript mirror of docs/database-schema.md.
+ * Shared domain types - the TypeScript mirror of docs/database-schema.md.
  * If the schema changes, change it there first, then here.
  */
 

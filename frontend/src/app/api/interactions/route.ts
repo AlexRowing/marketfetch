@@ -8,8 +8,10 @@ const KINDS: InteractionKind[] = ["view", "save", "reject", "unsave"];
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
+  // Guests can interact, but nothing is persisted: accept the action as a
+  // no-op so the optimistic UI stays put without writing to the DB.
   if (!user) {
-    return NextResponse.json({ error: "not logged in" }, { status: 401 });
+    return NextResponse.json({ ok: true, guest: true }, { status: 200 });
   }
 
   const body = await request.json().catch(() => null);

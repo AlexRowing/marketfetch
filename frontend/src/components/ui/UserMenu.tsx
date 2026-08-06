@@ -32,7 +32,7 @@ export function UserMenu({ displayName }: { displayName: string }) {
     <div className="flex items-center gap-2">
       <span
         title={displayName}
-        className="hidden max-w-28 truncate text-sm font-medium text-zinc-600 sm:inline-block dark:text-zinc-300"
+        className="hidden max-w-28 truncate text-sm font-medium text-ink-muted sm:inline-block"
       >
         {displayName}
       </span>
@@ -42,7 +42,7 @@ export function UserMenu({ displayName }: { displayName: string }) {
         disabled={busy}
         aria-label="Log out"
         title="Log out"
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
       >
         {/* door-with-arrow sign-out icon */}
         <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" aria-hidden>

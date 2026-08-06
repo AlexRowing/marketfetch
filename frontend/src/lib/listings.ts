@@ -54,7 +54,7 @@ export interface PricePoint {
 
 /**
  * Price stats over the listing's most similar items, found by vector
- * similarity on the CockroachDB embeddings (sold listings included — sold
+ * similarity on the CockroachDB embeddings (sold listings included - sold
  * prices are real market data). Null when nothing is similar enough.
  */
 export interface SimilarPriceStats {
@@ -104,7 +104,7 @@ export async function getListingDetail(
          WHERE user_id = $2 AND listing_id = l.id AND kind IN ('save', 'unsave')
          ORDER BY created_at DESC LIMIT 1
        ) ss ON true
-       WHERE l.id = $1`,
+       WHERE l.id = $1 AND l.source <> 'seed'`,
       [listingId, userId]
     ),
     query<{ price: string; captured_at: string }>(
@@ -114,7 +114,7 @@ export async function getListingDetail(
     ),
     // Comparables via vector similarity: the 15 nearest listings by embedding
     // cosine distance, gated at < 0.5 so "nearest" still means "similar".
-    // Sold listings stay in — a sold price is the market speaking. Median +
+    // Sold listings stay in - a sold price is the market speaking. Median +
     // IQR instead of a mean so one 33k vintage outlier can't skew anything.
     query<{ n: number; median: number | null; p25: number | null; p75: number | null }>(
       `SELECT count(*)::INT AS n,
@@ -126,6 +126,7 @@ export async function getListingDetail(
          FROM listings c
          JOIN listings t ON t.id = $1
          WHERE c.id != t.id
+           AND c.source <> 'seed'
            AND (c.embedding <=> t.embedding) < 0.5
          ORDER BY c.embedding <=> t.embedding ASC
          LIMIT 15
@@ -214,7 +215,7 @@ function mapFeedRow(r: FeedRow): FeedItem {
  * price-drop context and saved state, taste-ranked (cosine distance between
  * the listing embedding and the user's taste embedding; items or users
  * without embeddings fall back to newest-first via NULLS LAST).
- * `limit: null` fetches everything — used to rank search server-side.
+ * `limit: null` fetches everything - used to rank search server-side.
  */
 async function queryFeed(
   userId: string,
@@ -223,10 +224,12 @@ async function queryFeed(
   offset: number,
   limit: number | null
 ): Promise<FeedItem[]> {
-  // Active = taste-ranked discovery; sold = recently-sold-first research view.
+  // Active = preference-then-taste-ranked discovery (items matching the user's
+  // saved Preferences float to the top, ties broken by taste); sold =
+  // recently-sold-first research view.
   const orderBy =
     status === "active"
-      ? "taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id"
+      ? "pref_boost DESC, taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id"
       : "l.last_seen_at DESC, l.id";
   const rows = await query<FeedRow>(
     `SELECT l.id, l.title, l.brand, l.category, l.size, l.color, l.condition,
@@ -234,7 +237,28 @@ async function queryFeed(
             extract(day FROM now() - COALESCE(l.listed_at, l.first_seen_at))::INT AS listing_age_days,
             fp.first_price,
             ss.save_state,
-            (l.embedding <=> t.embedding) AS taste_distance
+            (l.embedding <=> t.embedding) AS taste_distance,
+            -- Buyer Memory boost: preferred brand (3) beats colour/size/in-budget
+            -- (1 each). Guests have no preferences, so this is 0 and order is
+            -- pure taste. Mirrors scoreListing's weights in lib/search.ts.
+            COALESCE((
+              SELECT sum(
+                CASE
+                  WHEN p.kind = 'brand' AND l.brand IS NOT NULL
+                    AND lower(p.value) = lower(l.brand) THEN 3
+                  WHEN p.kind = 'color' AND l.color IS NOT NULL
+                    AND lower(p.value) = lower(l.color) THEN 1
+                  WHEN p.kind = 'size' AND l.size IS NOT NULL
+                    AND lower(l.size) LIKE '%' || lower(p.value) || '%' THEN 1
+                  WHEN p.kind = 'category_budget'
+                    AND lower(p.value) = lower(l.category)
+                    AND p.numeric_value IS NOT NULL
+                    AND l.current_price <= p.numeric_value THEN 1
+                  ELSE 0
+                END
+              )
+              FROM user_preferences p WHERE p.user_id = $1
+            ), 0) AS pref_boost
      FROM listings l
      LEFT JOIN user_taste_embeddings t ON t.user_id = $1
      LEFT JOIN LATERAL (
@@ -252,6 +276,8 @@ async function queryFeed(
        LIMIT 1
      ) ss ON true
      WHERE l.is_active = $5
+       -- Hide hand-curated demo rows; only real ingested marketplace listings.
+       AND l.source <> 'seed'
        AND ($2::STRING IS NULL OR l.category = $2)
        AND NOT EXISTS (
          SELECT 1 FROM interactions r
@@ -281,7 +307,7 @@ export function getFeedListings(
   return queryFeed(userId, status, category, offset, limit);
 }
 
-/** Every feed-eligible listing, taste-ranked — input for server-side search. */
+/** Every feed-eligible listing, taste-ranked - input for server-side search. */
 export function getSearchCandidates(
   userId: string,
   status: ListingStatus = "active",
@@ -300,6 +326,7 @@ export async function countFeedListings(
     `SELECT count(*) AS total
      FROM listings l
      WHERE l.is_active = $3
+       AND l.source <> 'seed'
        AND ($2::STRING IS NULL OR l.category = $2)
        AND NOT EXISTS (
          SELECT 1 FROM interactions r
@@ -316,6 +343,7 @@ export async function getFeedCategories(userId: string): Promise<string[]> {
     `SELECT DISTINCT l.category
      FROM listings l
      WHERE l.is_active
+       AND l.source <> 'seed'
        AND NOT EXISTS (
          SELECT 1 FROM interactions r
          WHERE r.user_id = $1 AND r.listing_id = l.id AND r.kind = 'reject'

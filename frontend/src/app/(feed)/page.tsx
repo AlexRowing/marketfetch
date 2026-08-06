@@ -1,56 +1,63 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { FeedGrid } from "@/components/listings/FeedGrid";
 import { DealsBrief } from "@/components/listings/DealsBrief";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { GuestBanner } from "@/components/ui/GuestBanner";
 import {
   countFeedListings,
   getFeedCategories,
   getFeedListings,
 } from "@/lib/listings";
 import { getDealsForUser } from "@/lib/deals";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, ANON_USER_ID } from "@/lib/auth";
 
 // The feed reads live data from CockroachDB on every request.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  // The feed is public: logged-out visitors browse as guests (unpersonalized),
+  // logged-in users get taste-ranking, saved state, and rejects.
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  const viewerId = user?.id ?? ANON_USER_ID;
 
   // First taste-ranked page; FeedGrid pulls the rest via /api/listings.
   // Deals brief is the agent's proactive pick, computed over the whole catalog.
   const [listings, total, categories, deals] = await Promise.all([
-    getFeedListings(user.id),
-    countFeedListings(user.id),
-    getFeedCategories(user.id),
-    getDealsForUser(user.id),
+    getFeedListings(viewerId),
+    countFeedListings(viewerId),
+    getFeedCategories(viewerId),
+    getDealsForUser(viewerId),
   ]);
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 font-sans dark:bg-black">
+    <div className="flex flex-1 flex-col bg-canvas font-sans">
       <PageHeader maxWidth="max-w-5xl" user={user}>
-        <nav className="flex items-center gap-3 text-sm">
-          <span className="hidden rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 sm:inline-block dark:bg-zinc-900 dark:text-zinc-400">
-            {total} listings
-          </span>
+        <nav className="flex items-center gap-4 text-sm">
           <Link
             href="/preferences"
-            className="font-medium text-zinc-600 transition-colors hover:text-brand-600 dark:text-zinc-300 dark:hover:text-brand-400"
+            className="font-medium text-ink-muted transition-colors hover:text-brand-600"
           >
             Preferences
           </Link>
         </nav>
       </PageHeader>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Your feed
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Deals ranked by your taste — the agent surfaces what&apos;s worth acting on.
-          </p>
-        </div>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+        <header className="mb-9 flex items-end justify-between gap-6 border-b border-line pb-6">
+          <div className="animate-rise">
+            <h1 className="font-serif text-[2.5rem] font-semibold leading-[1.05] tracking-tight text-balance text-ink sm:text-5xl">
+              {user ? "Your feed" : "The feed"}
+            </h1>
+            <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-muted">
+              {user
+                ? "Deals ranked by your taste - the agent surfaces what's worth acting on."
+                : "A live look at what the agent is tracking. Log in to rank it by your taste."}
+            </p>
+          </div>
+          <span className="hidden shrink-0 pb-1 font-mono text-xs tracking-tight text-ink-soft sm:block">
+            {total.toLocaleString("en-US")} listings
+          </span>
+        </header>
+        {!user && <GuestBanner className="mb-8" />}
         <DealsBrief deals={deals} />
         <FeedGrid
           initialItems={listings}
