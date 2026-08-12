@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { Footer } from "@/components/ui/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +54,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeInit }}
         />
         {children}
+        <Footer />
         <ChatWidget />
       </body>
     </html>

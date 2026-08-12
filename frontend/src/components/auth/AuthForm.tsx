@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Mode = "login" | "register";
 
@@ -131,6 +132,18 @@ export function AuthForm() {
           ? "The agent remembers your taste, saves, and budgets."
           : "Your Buyer Memory starts fresh - teach it in Preferences."}
       </p>
+      {mode === "register" && (
+        <p className="mt-2 text-center text-xs text-ink-soft">
+          By signing up you agree to our{" "}
+          <Link
+            href="/privacy"
+            className="underline underline-offset-2 hover:text-ink-muted"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }
