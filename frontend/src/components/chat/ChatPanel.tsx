@@ -5,47 +5,108 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SparkIcon } from "@/components/ui/icons";
 
-// Turn the agent's Markdown links - [label](/listings/id) or [label](https://…)
-// - into clickable links, leaving all other text untouched. We only honour
-// in-app paths ("/…") and http(s) URLs so a stray href can't smuggle in
-// javascript:. In-app links use next/link for client-side nav; external ones
-// open in a new tab. Everything else renders as plain text.
-const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+// Renders the small, safe subset of Markdown the agent actually produces:
+// paragraphs, line breaks, **bold**, "- "/"1. " lists, and
+// [label](/listings/id or https://…) links. No dangerouslySetInnerHTML
+// anywhere - every node below is a real React element or a plain string, so
+// there's no injection surface no matter what the model outputs.
+//
+// Verified against real model output (2026-08-19): under the current system
+// prompt Claude never emits bold or lists, but a "go deeper" follow-up
+// routinely comes back as 3-4 blank-line-separated paragraphs - which the
+// previous single-pass renderer collapsed into one run-on block, since plain
+// text nodes don't preserve whitespace in HTML. That's the paragraph-splitting
+// logic below; bold/list support is defensive, cheap to keep once the
+// block-level structure exists, and future-proofs against prompt changes.
 
-function renderMessage(text: string): ReactNode[] {
+// Matches a link OR a bold span, whichever comes first - one left-to-right
+// scan keeps the two interleaved correctly instead of two passes fighting
+// over overlapping ranges.
+const INLINE_RE = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*/g;
+
+function renderInline(text: string, keyPrefix: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
-  LINK_RE.lastIndex = 0;
-  while ((m = LINK_RE.exec(text)) !== null) {
-    const [full, label, href] = m;
-    const internal = href.startsWith("/");
-    const external = href.startsWith("http://") || href.startsWith("https://");
-    if (!internal && !external) continue; // skip unsafe/relative hrefs, keep as text
-    if (m.index > last) nodes.push(text.slice(last, m.index));
-    const className =
-      "font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700";
-    nodes.push(
-      internal ? (
-        <Link key={m.index} href={href} className={className}>
-          {label}
-        </Link>
-      ) : (
-        <a
-          key={m.index}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={className}
-        >
-          {label}
-        </a>
-      ),
-    );
-    last = m.index + full.length;
+  let key = 0;
+  INLINE_RE.lastIndex = 0;
+  while ((m = INLINE_RE.exec(text)) !== null) {
+    const [full, linkLabel, href, boldText] = m;
+    if (href !== undefined) {
+      const internal = href.startsWith("/");
+      const external = href.startsWith("http://") || href.startsWith("https://");
+      if (!internal && !external) continue; // unsafe/relative href - leave as literal text
+      if (m.index > last) nodes.push(text.slice(last, m.index));
+      const className =
+        "font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700";
+      nodes.push(
+        internal ? (
+          <Link key={`${keyPrefix}-${key++}`} href={href} className={className}>
+            {linkLabel}
+          </Link>
+        ) : (
+          <a
+            key={`${keyPrefix}-${key++}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={className}
+          >
+            {linkLabel}
+          </a>
+        ),
+      );
+      last = m.index + full.length;
+    } else if (boldText !== undefined) {
+      if (m.index > last) nodes.push(text.slice(last, m.index));
+      nodes.push(
+        <strong key={`${keyPrefix}-${key++}`} className="font-semibold text-ink">
+          {boldText}
+        </strong>,
+      );
+      last = m.index + full.length;
+    }
   }
   if (last < text.length) nodes.push(text.slice(last));
   return nodes.length > 0 ? nodes : [text];
+}
+
+const BULLET_LINE = /^[-*]\s+/;
+const NUMBERED_LINE = /^\d+\.\s+/;
+
+function renderMessage(text: string): ReactNode[] {
+  const blocks = text.trim().split(/\n\s*\n/);
+  return blocks.map((block, bi) => {
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length > 0 && lines.every((l) => BULLET_LINE.test(l))) {
+      return (
+        <ul key={bi} className={`list-disc space-y-1 pl-4 ${bi > 0 ? "mt-2" : ""}`}>
+          {lines.map((l, li) => (
+            <li key={li}>{renderInline(l.replace(BULLET_LINE, ""), `${bi}-${li}`)}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (lines.length > 0 && lines.every((l) => NUMBERED_LINE.test(l))) {
+      return (
+        <ol key={bi} className={`list-decimal space-y-1 pl-4 ${bi > 0 ? "mt-2" : ""}`}>
+          {lines.map((l, li) => (
+            <li key={li}>{renderInline(l.replace(NUMBERED_LINE, ""), `${bi}-${li}`)}</li>
+          ))}
+        </ol>
+      );
+    }
+    return (
+      <p key={bi} className={bi > 0 ? "mt-2" : undefined}>
+        {lines.map((l, li) => (
+          <span key={li}>
+            {li > 0 && <br />}
+            {renderInline(l, `${bi}-${li}`)}
+          </span>
+        ))}
+      </p>
+    );
+  });
 }
 
 interface Message {
