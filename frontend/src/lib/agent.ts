@@ -123,10 +123,14 @@ The database is "defaultdb". Schema:
   or 'inferred' (you learned it).
 - user_taste_embeddings(user_id, embedding VECTOR) - the user's taste profile.
 - listings(id, source, external_id, title, description, brand, category, size,
-  color, condition, image_url, url, current_price, currency, first_seen_at,
-  last_seen_at, is_active, embedding VECTOR) - color is the item's colour;
-  condition is the seller's grade (like new / very good / good / fair).
-  current_price is always USD - talk in dollars ($).
+  color, condition, image_url, url, current_price, currency, is_synthetic,
+  first_seen_at, last_seen_at, is_active, embedding VECTOR) - color is the
+  item's colour; condition is the seller's grade (like new / very good / good
+  / fair). current_price is always USD - talk in dollars ($). is_synthetic=true
+  means generated demo data - it still carries a real marketplace name in the
+  source column (vinted/depop/ebay/grailed) so never say "on Vinted" or similar
+  for one of these; call it "this listing" or "a sample listing" instead. Only
+  name the real marketplace when is_synthetic=false.
 - price_snapshots(id, listing_id, price, currency, captured_at) - Price Memory,
   append-only history. Multiple downward snapshots = a seller who keeps cutting.
 - interactions(id, user_id, listing_id, kind view|save|reject|unsave, created_at)

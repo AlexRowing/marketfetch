@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS listings (
     first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     is_active     BOOL NOT NULL DEFAULT true,
+    is_synthetic  BOOL NOT NULL DEFAULT false, -- true = generated demo data, not a real marketplace pull
     embedding     VECTOR(1024),               -- title+description+brand+category
     UNIQUE (source, external_id)
 );

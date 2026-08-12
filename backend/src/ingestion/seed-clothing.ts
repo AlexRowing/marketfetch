@@ -351,8 +351,8 @@ async function insertListing(l: GenListing): Promise<boolean> {
     `INSERT INTO listings
        (source, external_id, title, description, brand, category, size, color,
         condition, current_price, currency, listed_at, first_seen_at,
-        last_seen_at, is_active)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'USD',$11,$11,$12,$13)
+        last_seen_at, is_active, is_synthetic)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'USD',$11,$11,$12,$13,true)
      ON CONFLICT (source, external_id) DO NOTHING
      RETURNING id`,
     [

@@ -89,7 +89,10 @@ export default async function ListingPage({
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             {listing.source !== "seed" && (
-              <SourceBadgeLarge source={listing.source} />
+              <SourceBadgeLarge
+                source={listing.source}
+                isSynthetic={listing.isSynthetic}
+              />
             )}
             <p className="text-sm text-ink-muted">
               {[listing.brand, listing.size, listing.color, listing.condition]

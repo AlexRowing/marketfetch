@@ -22,6 +22,8 @@ export interface Deal {
   currentPrice: number;
   currency: string;
   listingAgeDays: number;
+  /** True = generated demo data wearing a real marketplace's source label. */
+  isSynthetic: boolean;
   /** Change vs first recorded price (negative = dropped). */
   dropPct: number | null;
   /** Vs similar-items median (negative = below), null if cohort too thin. */
@@ -50,6 +52,7 @@ interface DealRow {
   url: string | null;
   current_price: string;
   currency: string;
+  is_synthetic: boolean;
   listing_age_days: string;
   first_price: string | null;
   median: string | null;
@@ -63,7 +66,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
     query<DealRow>(
       `WITH cand AS (
          SELECT l.id, l.title, l.brand, l.category, l.size, l.condition,
-                l.image_url, l.source, l.url, l.current_price, l.currency, l.embedding,
+                l.image_url, l.source, l.url, l.current_price, l.currency, l.is_synthetic, l.embedding,
                 extract(day FROM now() - COALESCE(l.listed_at, l.first_seen_at))::INT AS listing_age_days,
                 (l.embedding <=> t.embedding) AS taste_distance,
                 fp.first_price
@@ -83,7 +86,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
          LIMIT ${CANDIDATES}
        )
        SELECT c.id, c.title, c.brand, c.category, c.size, c.condition,
-              c.image_url, c.source, c.url, c.current_price, c.currency,
+              c.image_url, c.source, c.url, c.current_price, c.currency, c.is_synthetic,
               c.listing_age_days, c.first_price, s.median, s.p25, s.p75, s.n
        FROM cand c
        LEFT JOIN LATERAL (
@@ -173,6 +176,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
           url: r.url,
           currentPrice: price,
           currency: r.currency,
+          isSynthetic: r.is_synthetic,
           listingAgeDays: Number(r.listing_age_days),
           dropPct,
           vsSimilarPct,

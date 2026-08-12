@@ -36,8 +36,35 @@ function SourceLogo({ source, size = 16 }: { source: string; size?: number }) {
   );
 }
 
-/** Compact pill for listing cards (overlaid on the image area). */
-export function SourceBadge({ source }: { source: string }) {
+/**
+ * Compact pill for listing cards (overlaid on the image area). Synthetic
+ * listings (backend/src/ingestion/seed-clothing.ts) carry a real marketplace
+ * `source` label so the agent has a rich catalog to reason over, but they
+ * never actually came from that marketplace - so this badge deliberately
+ * does NOT render the brand color/mark for them. Showing a real "Vinted" or
+ * "eBay" logo on generated data would misrepresent an integration that
+ * doesn't exist; a plain "Demo listing" pill is the honest version.
+ */
+export function SourceBadge({
+  source,
+  isSynthetic,
+}: {
+  source: string;
+  isSynthetic: boolean;
+}) {
+  if (isSynthetic) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-line-strong bg-surface/90 py-0.5 pl-1 pr-2 text-[11px] font-medium text-ink-muted shadow-sm backdrop-blur-sm">
+        <span
+          aria-hidden
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] bg-ink-soft text-[9.9px] font-bold leading-none text-canvas"
+        >
+          ?
+        </span>
+        Demo listing
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 py-0.5 pl-1 pr-2 text-[11px] font-medium text-ink-muted shadow-sm backdrop-blur-sm">
       <SourceLogo source={source} size={16} />
@@ -47,7 +74,29 @@ export function SourceBadge({ source }: { source: string }) {
 }
 
 /** Larger inline variant for the listing detail page. */
-export function SourceBadgeLarge({ source }: { source: string }) {
+export function SourceBadgeLarge({
+  source,
+  isSynthetic,
+}: {
+  source: string;
+  isSynthetic: boolean;
+}) {
+  if (isSynthetic) {
+    return (
+      <span
+        title="Generated demo data for this hackathon build - not a real marketplace listing"
+        className="inline-flex items-center gap-2 rounded-lg border border-dashed border-line-strong bg-surface py-1 pl-1.5 pr-2.5 text-sm font-medium text-ink-muted"
+      >
+        <span
+          aria-hidden
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] bg-ink-soft text-xs font-bold leading-none text-canvas"
+        >
+          ?
+        </span>
+        Demo listing
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface py-1 pl-1.5 pr-2.5 text-sm font-medium text-ink-muted">
       <SourceLogo source={source} size={20} />

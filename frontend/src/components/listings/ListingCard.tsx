@@ -80,7 +80,7 @@ export function ListingCard({
 
         {showSource && (
           <span className="absolute bottom-2.5 left-2.5 z-[2]">
-            <SourceBadge source={item.source} />
+            <SourceBadge source={item.source} isSynthetic={item.isSynthetic} />
           </span>
         )}
 

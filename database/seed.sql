@@ -57,6 +57,11 @@ INSERT INTO listings
   ('a0000000-0000-0000-0000-000000000029', 'seed', 'seed-029', 'Polaroid Now Instant Camera', 'White body, autofocus, tested and working. Comes with a half-used film pack.', 'Polaroid', 'electronics', 'one size', 'white', 'very good', 75.00, 'USD', now() - '8 days'::INTERVAL, now())
 ON CONFLICT DO NOTHING;
 
+-- All hand-authored demo rows above are synthetic (see 0004_is_synthetic.sql).
+-- A follow-up UPDATE (not inline in the INSERTs) so this stays a one-line,
+-- idempotent fix instead of touching every VALUES tuple.
+UPDATE listings SET is_synthetic = true WHERE source = 'seed' AND NOT is_synthetic;
+
 -- Price Memory: history for three listings so charts/deal badges have data.
 -- Carhartt jacket: 86.50 → 75 → 67 (the demo's "good deal" story)
 -- Air Max 90:      69.50 → 60 → 55.50

@@ -24,6 +24,8 @@ export interface FeedItem {
   isSaved: boolean;
   /** False once the listing is sold / delisted on the source marketplace. */
   isActive: boolean;
+  /** True = generated demo data wearing a real marketplace's source label. */
+  isSynthetic: boolean;
   /**
    * Median of embedding-similar listings, when that cohort is price-coherent
    * (tight interquartile spread); null otherwise. The "usually sells around $X".
@@ -63,6 +65,7 @@ interface FeedRow {
   first_price: string | null;
   save_state: string | null;
   is_active: boolean;
+  is_synthetic: boolean;
   // Similar-items price stats (present on the feed query, absent on detail).
   sim_median: number | null;
   sim_p25: number | null;
@@ -149,7 +152,7 @@ export async function getListingDetail(
 ): Promise<ListingDetail | null> {
   const [listingRows, historyRows, marketRows] = await Promise.all([
     query<FeedRow & { description: string }>(
-      `SELECT l.id, l.title, l.description, l.url, l.source, l.is_active,
+      `SELECT l.id, l.title, l.description, l.url, l.source, l.is_active, l.is_synthetic,
               l.brand, l.category, l.size, l.color, l.condition,
               l.image_url, l.current_price, l.currency,
               extract(day FROM now() - COALESCE(l.listed_at, l.first_seen_at))::INT AS listing_age_days,
@@ -233,6 +236,7 @@ export async function getListingDetail(
         : null,
     isSaved: r.save_state === "save",
     isActive: r.is_active,
+    isSynthetic: r.is_synthetic,
     // Feed-card context fields (the detail page renders its own richer Price
     // Memory panel, so it doesn't use `insight`).
     marketMedian: similar ? similar.median : null,
@@ -301,6 +305,7 @@ function mapFeedRow(r: FeedRow): FeedItem {
     priceChangePct,
     isSaved: r.save_state === "save",
     isActive: r.is_active,
+    isSynthetic: r.is_synthetic,
     marketMedian,
     vsMarketPct,
     priceCuts,
@@ -338,7 +343,7 @@ async function queryFeed(
       : "l.last_seen_at DESC, l.id";
   const rows = await query<FeedRow>(
     `SELECT l.id, l.title, l.brand, l.category, l.size, l.color, l.condition,
-            l.image_url, l.source, l.url, l.current_price, l.currency, l.is_active,
+            l.image_url, l.source, l.url, l.current_price, l.currency, l.is_active, l.is_synthetic,
             extract(day FROM now() - COALESCE(l.listed_at, l.first_seen_at))::INT AS listing_age_days,
             fp.first_price,
             ss.save_state,
