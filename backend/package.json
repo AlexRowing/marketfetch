@@ -7,6 +7,7 @@
   "scripts": {
     "seed:clothing": "tsx src/ingestion/seed-clothing.ts",
     "seed:clothing:reset": "tsx src/ingestion/seed-clothing.ts --reset",
+    "images:backfill": "tsx src/ingestion/backfill-images.ts",
     "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
     "taste:recompute": "tsx src/embeddings/recompute-taste.ts",
     "prices:snapshot": "tsx src/pricing/snapshot.ts",

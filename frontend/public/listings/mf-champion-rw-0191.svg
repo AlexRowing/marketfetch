@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Champion Reverse Weave Hoodie">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f2ec"/><stop offset="1" stop-color="#e7e3de"/></linearGradient>
+<radialGradient id="hl" cx="0.5" cy="0.36" r="0.62"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#4e5a76"/><stop offset="1" stop-color="#26324f"/></linearGradient>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<rect width="800" height="1000" fill="url(#hl)"/>
+<ellipse cx="400" cy="812" rx="150" ry="24" fill="#000000" opacity="0.08"/>
+<g transform="rotate(0.07 400 560)"><path d="M336 414 Q400 356 464 414 Q432 398 400 398 Q368 398 336 414 Z" fill="#6b758d" stroke="#222d48" stroke-width="3"/><path d="M330 416 L284 446 L316 704 L360 694 Z" fill="url(#g)" stroke="#222d48" stroke-width="3" stroke-linejoin="round"/><path d="M470 416 L516 446 L484 704 L440 694 Z" fill="url(#g)" stroke="#222d48" stroke-width="3" stroke-linejoin="round"/><path d="M322 414 Q346 400 372 400 L428 400 Q454 400 478 414 L478 732 Q478 750 458 750 L342 750 Q322 750 322 732 Z" fill="url(#g)" stroke="#222d48" stroke-width="3" stroke-linejoin="round"/><path d="M352 566 Q352 558 360 558 L440 558 Q448 558 448 566 L448 650 Q448 658 440 658 L360 658 Q352 658 352 650 Z" fill="none" stroke="#6b758d" stroke-width="3"/><line x1="390" y1="414" x2="388" y2="470" stroke="#6b758d" stroke-width="3" stroke-linecap="round"/><line x1="410" y1="414" x2="412" y2="470" stroke="#6b758d" stroke-width="3" stroke-linecap="round"/><circle cx="388" cy="472" r="6" fill="#6b758d"/><circle cx="412" cy="472" r="6" fill="#6b758d"/></g>
+<text x="400" y="936" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#9a9086">CHAMPION</text>
+</svg>

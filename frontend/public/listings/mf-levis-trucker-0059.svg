@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Vintage Levi&apos;s Trucker Jacket">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2ede5"/><stop offset="1" stop-color="#e3dfd7"/></linearGradient>
+<radialGradient id="hl" cx="0.5" cy="0.36" r="0.62"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#567aba"/><stop offset="1" stop-color="#2e5395"/></linearGradient>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<rect width="800" height="1000" fill="url(#hl)"/>
+<ellipse cx="400" cy="812" rx="150" ry="24" fill="#000000" opacity="0.08"/>
+<g transform="rotate(0.66 400 560)"><path d="M330 414 L282 446 L314 706 L358 696 Z" fill="url(#g)" stroke="#2a4c87" stroke-width="3" stroke-linejoin="round"/><path d="M470 414 L518 446 L486 706 L442 696 Z" fill="url(#g)" stroke="#2a4c87" stroke-width="3" stroke-linejoin="round"/><path d="M322 412 Q346 398 372 398 L400 398 L400 750 L342 750 Q322 750 322 732 Z" fill="url(#g)" stroke="#2a4c87" stroke-width="3" stroke-linejoin="round"/><path d="M478 412 Q454 398 428 398 L400 398 L400 750 L458 750 Q478 750 478 732 Z" fill="url(#g)" stroke="#2a4c87" stroke-width="3" stroke-linejoin="round"/><path d="M372 398 L400 438 L362 430 Z" fill="#7290c6"/><path d="M428 398 L400 438 L438 430 Z" fill="#7290c6"/><line x1="400" y1="438" x2="400" y2="748" stroke="#7290c6" stroke-width="4" stroke-dasharray="2 9"/><rect x="344" y="632" width="46" height="60" rx="6" fill="none" stroke="#7290c6" stroke-width="3"/><rect x="410" y="632" width="46" height="60" rx="6" fill="none" stroke="#7290c6" stroke-width="3"/></g>
+<text x="400" y="936" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#9a9086">LEVI&apos;S</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Carhartt Watch Hat Beanie">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5f1ea"/><stop offset="1" stop-color="#e6e3dc"/></linearGradient>
+<radialGradient id="hl" cx="0.5" cy="0.36" r="0.62"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#aaafb4"/><stop offset="1" stop-color="#848a8f"/></linearGradient>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<rect width="800" height="1000" fill="url(#hl)"/>
+<ellipse cx="400" cy="812" rx="150" ry="24" fill="#000000" opacity="0.08"/>
+<g transform="rotate(-0.11 400 560)"><path d="M272 566 Q272 424 400 424 Q528 424 528 566 Z" fill="url(#g)" stroke="#666a6e" stroke-width="3" stroke-linejoin="round"/><rect x="260" y="558" width="280" height="66" rx="22" fill="#6c7074"/><path d="M330 560 Q330 452 372 434 M400 560 L400 430 M470 560 Q470 452 428 434" fill="none" stroke="#666a6e" stroke-width="2.5" opacity="0.5"/></g>
+<text x="400" y="936" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#9a9086">CARHARTT</text>
+</svg>

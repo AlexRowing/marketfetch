@@ -24,8 +24,14 @@
 // price history is only written for freshly-inserted rows. Embeds any listing
 // still missing an embedding at the end (reuses the Titan pipeline).
 
+import { mkdir, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { pool, toVectorLiteral } from "../db/client.js";
 import { embedText, listingEmbeddingText } from "../embeddings/titan.js";
+import { listingImageSvg, seedFromString } from "./listing-image.js";
+
+// repo/frontend/public/listings — served at /listings/<file> by Next.
+const IMAGE_DIR = fileURLToPath(new URL("../../../frontend/public/listings/", import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Deterministic RNG so the whole dataset is stable across runs (same prices,
@@ -347,17 +353,30 @@ async function wipeCatalog() {
 }
 
 async function insertListing(l: GenListing): Promise<boolean> {
+  // Deterministic product image, written alongside the row so a fresh seed is
+  // self-contained (no separate images:backfill needed).
+  const imageFile = `${l.externalId}.svg`;
+  await writeFile(
+    `${IMAGE_DIR}${imageFile}`,
+    listingImageSvg({
+      brand: l.brand, category: l.category, color: l.color,
+      title: l.title, seed: seedFromString(l.externalId),
+    }),
+    "utf8",
+  );
+  const imageUrl = `/listings/${imageFile}`;
+
   const res = await pool.query<{ id: string }>(
     `INSERT INTO listings
        (source, external_id, title, description, brand, category, size, color,
         condition, current_price, currency, listed_at, first_seen_at,
-        last_seen_at, is_active, is_synthetic)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'USD',$11,$11,$12,$13,true)
+        last_seen_at, is_active, is_synthetic, image_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'USD',$11,$11,$12,$13,true,$14)
      ON CONFLICT (source, external_id) DO NOTHING
      RETURNING id`,
     [
       l.source, l.externalId, l.title, l.description, l.brand, l.category,
-      l.size, l.color, l.condition, l.price, l.listedAt, l.lastSeenAt, l.isActive,
+      l.size, l.color, l.condition, l.price, l.listedAt, l.lastSeenAt, l.isActive, imageUrl,
     ],
   );
   const id = res.rows[0]?.id;
@@ -395,6 +414,7 @@ async function embedMissing(): Promise<number> {
 async function main() {
   const reset = process.argv.includes("--reset");
   const listings = generate();
+  await mkdir(IMAGE_DIR, { recursive: true });
 
   if (reset) {
     console.log("--reset: wiping existing catalog, interactions, and taste…");

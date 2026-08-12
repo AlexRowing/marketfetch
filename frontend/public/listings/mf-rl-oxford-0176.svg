@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Ralph Lauren Oxford Shirt">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f3ed"/><stop offset="1" stop-color="#e8e4df"/></linearGradient>
+<radialGradient id="hl" cx="0.5" cy="0.36" r="0.62"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#eff1ec"/><stop offset="1" stop-color="#cbcdc8"/></linearGradient>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<rect width="800" height="1000" fill="url(#hl)"/>
+<ellipse cx="400" cy="812" rx="150" ry="24" fill="#000000" opacity="0.08"/>
+<g transform="rotate(-0.58 400 560)"><path d="M330 384 L266 414 Q255 420 259 434 L278 482 Q282 494 296 489 L332 471 Z" fill="url(#g)" stroke="#9c9d99" stroke-width="3" stroke-linejoin="round"/><path d="M470 384 L534 414 Q545 420 541 434 L522 482 Q518 494 504 489 L468 471 Z" fill="url(#g)" stroke="#9c9d99" stroke-width="3" stroke-linejoin="round"/><path d="M330 382 Q346 373 368 373 Q400 402 432 373 Q454 373 470 382 L470 728 Q470 746 452 746 L348 746 Q330 746 330 728 Z" fill="url(#g)" stroke="#9c9d99" stroke-width="3" stroke-linejoin="round"/><path d="M372 375 L400 405 L356 398 Z" fill="#a5a7a2"/><path d="M428 375 L400 405 L444 398 Z" fill="#a5a7a2"/><line x1="400" y1="405" x2="400" y2="742" stroke="#a5a7a2" stroke-width="3" stroke-linecap="round"/><circle cx="400" cy="470" r="5" fill="#a5a7a2"/><circle cx="400" cy="545" r="5" fill="#a5a7a2"/><circle cx="400" cy="620" r="5" fill="#a5a7a2"/><circle cx="400" cy="695" r="5" fill="#a5a7a2"/></g>
+<text x="400" y="936" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#9a9086">RALPH LAUREN</text>
+</svg>

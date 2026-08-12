@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Carhartt Double Knee Pants">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2ede5"/><stop offset="1" stop-color="#e3dfd7"/></linearGradient>
+<radialGradient id="hl" cx="0.5" cy="0.36" r="0.62"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#54555b"/><stop offset="1" stop-color="#2c2e34"/></linearGradient>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<rect width="800" height="1000" fill="url(#hl)"/>
+<ellipse cx="400" cy="812" rx="150" ry="24" fill="#000000" opacity="0.08"/>
+<g transform="rotate(0.54 400 560)"><rect x="316" y="338" width="168" height="42" rx="9" fill="#707277"/><path d="M316 380 L397 380 L390 748 Q390 758 380 758 L332 758 Q322 758 322 748 Z" fill="url(#g)" stroke="#28292f" stroke-width="3" stroke-linejoin="round"/><path d="M403 380 L484 380 L484 748 Q484 758 474 758 L426 758 Q416 758 416 748 Z" fill="url(#g)" stroke="#28292f" stroke-width="3" stroke-linejoin="round"/><line x1="400" y1="380" x2="400" y2="472" stroke="#707277" stroke-width="3" stroke-linecap="round"/><path d="M330 392 Q360 410 384 392" fill="none" stroke="#707277" stroke-width="3"/><path d="M470 392 Q440 410 416 392" fill="none" stroke="#707277" stroke-width="3"/><circle cx="360" cy="360" r="6" fill="#707277"/></g>
+<text x="400" y="936" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#9a9086">CARHARTT</text>
+</svg>
