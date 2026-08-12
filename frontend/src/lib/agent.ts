@@ -13,7 +13,10 @@ const bedrock = new BedrockRuntimeClient({
 });
 
 const MODEL_ID = process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-sonnet-4-6";
-const MAX_TOOL_ROUNDS = 8;
+const MAX_TOOL_ROUNDS = 10;
+// A reply that mentions specific listings but links none of them - matched
+// against /listings/<id> since that's the only path the agent ever emits.
+const LISTING_LINK_RE = /\/listings\/[0-9a-f-]{8,}/i;
 
 /**
  * A first-class tool for persisting a buyer preference, handled by us directly
@@ -140,10 +143,15 @@ The current user id is '${userId}'.
 Ranking by taste: ORDER BY l.embedding <=> t.embedding using the user's row in
 user_taste_embeddings - do the comparison INSIDE the SQL (join or subquery).
 NEVER put an embedding column in a SELECT list: vectors are 1024 numbers of
-useless text that will drown you. To judge a price, compare current_price to the
-listing's own price_snapshots history AND to the median of embedding-similar
-listings (nearest by l.embedding <=> the item's embedding; sold ones count -
-a sold price is the market speaking).
+useless text that will drown you. A JOIN against user_taste_embeddings that
+comes back with zero rows almost always means the user has no taste profile
+yet (new/guest users start with none) - do NOT read that as "no matching
+listings exist" and start guessing different category names. Immediately
+retry the SAME query WITHOUT the taste join, ordered by current_price or
+first_seen_at instead. To judge a price, compare current_price to the
+listing's own price_snapshots history AND to AVG/MIN/MAX(current_price) of
+same-category-or-brand listings - PERCENTILE_CONT is NOT supported by this
+SQL bridge, so never use it; AVG/MIN/MAX always work.
 
 How you talk - this is the whole point, get it right:
 - Lead with a verdict, then the reason. Say what you would do, not just what the
@@ -159,8 +167,13 @@ How you talk - this is the whole point, get it right:
   reason behind it, and a next step - do not dump everything you found. Go deeper
   only when they ask a follow-up.
 - Plain, spoken English. No emojis, no markdown headings, no bold-for-emphasis,
-  no hype ("amazing deal", "best price ever", exclamation-point energy). Sound
-  like a knowledgeable person, not a marketing banner.
+  no "---" horizontal-rule dividers between items, no hype ("amazing deal",
+  "best price ever", exclamation-point energy). This applies even when
+  comparing several items - don't reach for bold section labels or dividers to
+  organize a longer answer; a paragraph break per item, opening with a plain
+  sentence like "Buy this one:" or "Skip this one:", does the same job without
+  looking like a listicle. Sound like a knowledgeable person texting a friend,
+  not a marketing banner or a spec sheet.
 
 The register to match (copy the tone, not the words; use REAL ids from your
 queries in place of <id>):
@@ -200,6 +213,13 @@ export async function runAgent(
 ): Promise<AgentReply> {
   const mcp = await connectMcp();
   const toolCalls: AgentToolCall[] = [];
+  // True once a SELECT against `listings` this turn actually returned rows -
+  // i.e. the agent had real, linkable listings in hand. Gates the
+  // self-correction retry below so it only fires on the real failure mode
+  // (looked at listings, named none of them) and never on legitimate
+  // no-listing-needed replies ("what's my budget?").
+  let sawListingRows = false;
+  let correctionAttempted = false;
 
   try {
     const { tools: mcpTools } = await mcp.listTools();
@@ -246,6 +266,26 @@ export async function runAgent(
           .map((block) => block.text ?? "")
           .join("")
           .trim();
+        if (
+          sawListingRows &&
+          !correctionAttempted &&
+          !LISTING_LINK_RE.test(reply) &&
+          round < MAX_TOOL_ROUNDS
+        ) {
+          // The agent had real listings to point to this turn and didn't link
+          // any of them - the exact bug we saw in production. One bounded
+          // corrective round instead of trusting the prompt alone.
+          correctionAttempted = true;
+          messages.push({
+            role: "user",
+            content: [
+              {
+                text: "You looked up real listings this turn but your reply doesn't link to any of them. Rewrite your answer so every specific listing you mention is a real [title](/listings/<id>) markdown link, using an id from your query results above. If your reply genuinely names no specific listing (e.g. you're only answering a general question), you can repeat it as-is.",
+              },
+            ],
+          });
+          continue;
+        }
         return { reply, toolCalls };
       }
 
@@ -274,6 +314,16 @@ export async function runAgent(
           const text = (result.content as { type: string; text?: string }[])
             .map((c) => (c.type === "text" ? c.text ?? "" : ""))
             .join("\n");
+          // Scoped to actual `listings` queries (not preferences/snapshots-only
+          // ones) that came back with real rows, so the link-check above only
+          // fires when the agent genuinely had something to point to.
+          if (
+            !result.isError &&
+            /from\s+listings/i.test(String(input.query ?? "")) &&
+            /"id"\s*:/.test(text)
+          ) {
+            sawListingRows = true;
+          }
           results.push({
             toolResult: {
               toolUseId: block.toolUse.toolUseId,

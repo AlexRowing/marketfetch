@@ -74,10 +74,18 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
 const BULLET_LINE = /^[-*]\s+/;
 const NUMBERED_LINE = /^\d+\.\s+/;
 
+// A markdown thematic break ("---", "***", "___") on its own line. The system
+// prompt asks the model not to use these, but it doesn't always listen on a
+// long comparison reply - render it as a real divider instead of literal dashes.
+const THEMATIC_BREAK = /^(-{3,}|\*{3,}|_{3,})$/;
+
 function renderMessage(text: string): ReactNode[] {
   const blocks = text.trim().split(/\n\s*\n/);
   return blocks.map((block, bi) => {
     const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 1 && THEMATIC_BREAK.test(lines[0])) {
+      return <hr key={bi} className="my-2 border-line" />;
+    }
     if (lines.length > 0 && lines.every((l) => BULLET_LINE.test(l))) {
       return (
         <ul key={bi} className={`list-disc space-y-1 pl-4 ${bi > 0 ? "mt-2" : ""}`}>
