@@ -42,6 +42,12 @@ export default async function Home() {
           >
             Preferences
           </Link>
+          <Link
+            href="/chat"
+            className="font-medium text-ink-muted transition-colors hover:text-brand-600"
+          >
+            Chat
+          </Link>
         </nav>
       </PageHeader>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
