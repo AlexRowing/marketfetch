@@ -5,7 +5,7 @@ import {
   type Tool,
   type ToolResultContentBlock,
 } from "@aws-sdk/client-bedrock-runtime";
-import { connectMcp } from "@/lib/mcp";
+import { getMcp, invalidateMcp } from "@/lib/mcp";
 import { query } from "@/lib/db";
 
 const bedrock = new BedrockRuntimeClient({
@@ -211,7 +211,6 @@ export async function runAgent(
   history: { role: "user" | "assistant"; content: string }[],
   userId: string,
 ): Promise<AgentReply> {
-  const mcp = await connectMcp();
   const toolCalls: AgentToolCall[] = [];
   // True once a SELECT against `listings` this turn actually returned rows -
   // i.e. the agent had real, linkable listings in hand. Gates the
@@ -221,134 +220,140 @@ export async function runAgent(
   let sawListingRows = false;
   let correctionAttempted = false;
 
-  try {
-    const { tools: mcpTools } = await mcp.listTools();
-    // Our deterministic save_preference tool plus the MCP server's SQL tools.
-    const tools: Tool[] = [
-      savePreferenceTool,
-      ...mcpTools.map(
-        (t) =>
-          ({
-            toolSpec: {
-              name: t.name,
-              description: t.description ?? t.name,
-              inputSchema: { json: t.inputSchema as Record<string, unknown> },
+  const { client: mcp, tools: mcpTools } = await getMcp();
+
+  // Our deterministic save_preference tool plus the MCP server's SQL tools.
+  // Identical for every user/turn, so a cache point here lets Bedrock skip
+  // reprocessing the tool definitions on every request, not just every round.
+  const tools: Tool[] = [
+    savePreferenceTool,
+    ...mcpTools.map(
+      (t) =>
+        ({
+          toolSpec: {
+            name: t.name,
+            description: t.description ?? t.name,
+            inputSchema: { json: t.inputSchema as Record<string, unknown> },
+          },
+        }) as Tool,
+    ),
+    { cachePoint: { type: "default" } },
+  ];
+
+  const messages: Message[] = [
+    ...history.map((m) => ({
+      role: m.role,
+      content: [{ text: m.content }],
+    })),
+    { role: "user" as const, content: [{ text: userMessage }] },
+  ];
+
+  for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+    const response = await bedrock.send(
+      new ConverseCommand({
+        modelId: MODEL_ID,
+        // The system prompt is identical across every round of one turn -
+        // a cache point here means only the first round pays to process it.
+        system: [{ text: systemPrompt(userId) }, { cachePoint: { type: "default" } }],
+        messages,
+        toolConfig: { tools },
+        inferenceConfig: { maxTokens: 1500 },
+      }),
+    );
+
+    const output = response.output?.message;
+    if (!output) throw new Error("Bedrock returned no message");
+    messages.push(output);
+
+    if (response.stopReason !== "tool_use") {
+      const reply = (output.content ?? [])
+        .map((block) => block.text ?? "")
+        .join("")
+        .trim();
+      if (
+        sawListingRows &&
+        !correctionAttempted &&
+        !LISTING_LINK_RE.test(reply) &&
+        round < MAX_TOOL_ROUNDS
+      ) {
+        // The agent had real listings to point to this turn and didn't link
+        // any of them - the exact bug we saw in production. One bounded
+        // corrective round instead of trusting the prompt alone.
+        correctionAttempted = true;
+        messages.push({
+          role: "user",
+          content: [
+            {
+              text: "You looked up real listings this turn but your reply doesn't link to any of them. Rewrite your answer so every specific listing you mention is a real [title](/listings/<id>) markdown link, using an id from your query results above. If your reply genuinely names no specific listing (e.g. you're only answering a general question), you can repeat it as-is.",
             },
-          }) as Tool,
-      ),
-    ];
+          ],
+        });
+        continue;
+      }
+      return { reply, toolCalls };
+    }
 
-    const messages: Message[] = [
-      ...history.map((m) => ({
-        role: m.role,
-        content: [{ text: m.content }],
-      })),
-      { role: "user" as const, content: [{ text: userMessage }] },
-    ];
-
-    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      const response = await bedrock.send(
-        new ConverseCommand({
-          modelId: MODEL_ID,
-          system: [{ text: systemPrompt(userId) }],
-          messages,
-          toolConfig: { tools },
-          inferenceConfig: { maxTokens: 1500 },
-        }),
-      );
-
-      const output = response.output?.message;
-      if (!output) throw new Error("Bedrock returned no message");
-      messages.push(output);
-
-      if (response.stopReason !== "tool_use") {
-        const reply = (output.content ?? [])
-          .map((block) => block.text ?? "")
-          .join("")
-          .trim();
-        if (
-          sawListingRows &&
-          !correctionAttempted &&
-          !LISTING_LINK_RE.test(reply) &&
-          round < MAX_TOOL_ROUNDS
-        ) {
-          // The agent had real listings to point to this turn and didn't link
-          // any of them - the exact bug we saw in production. One bounded
-          // corrective round instead of trusting the prompt alone.
-          correctionAttempted = true;
-          messages.push({
-            role: "user",
-            content: [
-              {
-                text: "You looked up real listings this turn but your reply doesn't link to any of them. Rewrite your answer so every specific listing you mention is a real [title](/listings/<id>) markdown link, using an id from your query results above. If your reply genuinely names no specific listing (e.g. you're only answering a general question), you can repeat it as-is.",
-              },
-            ],
+    const results: { toolResult: { toolUseId: string; content: ToolResultContentBlock[]; status?: "success" | "error" } }[] = [];
+    for (const block of output.content ?? []) {
+      if (!block.toolUse?.toolUseId || !block.toolUse.name) continue;
+      toolCalls.push({ tool: block.toolUse.name, input: block.toolUse.input });
+      const input = (block.toolUse.input ?? {}) as Record<string, unknown>;
+      try {
+        // save_preference is ours - handle it directly instead of via MCP.
+        if (block.toolUse.name === SAVE_PREFERENCE) {
+          const text = await savePreference(userId, input);
+          results.push({
+            toolResult: {
+              toolUseId: block.toolUse.toolUseId,
+              content: [{ text }],
+              status: text.startsWith("error:") ? "error" : "success",
+            },
           });
           continue;
         }
-        return { reply, toolCalls };
-      }
-
-      const results: { toolResult: { toolUseId: string; content: ToolResultContentBlock[]; status?: "success" | "error" } }[] = [];
-      for (const block of output.content ?? []) {
-        if (!block.toolUse?.toolUseId || !block.toolUse.name) continue;
-        toolCalls.push({ tool: block.toolUse.name, input: block.toolUse.input });
-        const input = (block.toolUse.input ?? {}) as Record<string, unknown>;
-        try {
-          // save_preference is ours - handle it directly instead of via MCP.
-          if (block.toolUse.name === SAVE_PREFERENCE) {
-            const text = await savePreference(userId, input);
-            results.push({
-              toolResult: {
-                toolUseId: block.toolUse.toolUseId,
-                content: [{ text }],
-                status: text.startsWith("error:") ? "error" : "success",
-              },
-            });
-            continue;
-          }
-          const result = await mcp.callTool({
-            name: block.toolUse.name,
-            arguments: input,
-          });
-          const text = (result.content as { type: string; text?: string }[])
-            .map((c) => (c.type === "text" ? c.text ?? "" : ""))
-            .join("\n");
-          // Scoped to actual `listings` queries (not preferences/snapshots-only
-          // ones) that came back with real rows, so the link-check above only
-          // fires when the agent genuinely had something to point to.
-          if (
-            !result.isError &&
-            /from\s+listings/i.test(String(input.query ?? "")) &&
-            /"id"\s*:/.test(text)
-          ) {
-            sawListingRows = true;
-          }
-          results.push({
-            toolResult: {
-              toolUseId: block.toolUse.toolUseId,
-              content: [{ text: text || "(empty result)" }],
-              status: result.isError ? "error" : "success",
-            },
-          });
-        } catch (err) {
-          results.push({
-            toolResult: {
-              toolUseId: block.toolUse.toolUseId,
-              content: [{ text: `tool error: ${err instanceof Error ? err.message : String(err)}` }],
-              status: "error",
-            },
-          });
+        const result = await mcp.callTool({
+          name: block.toolUse.name,
+          arguments: input,
+        });
+        const text = (result.content as { type: string; text?: string }[])
+          .map((c) => (c.type === "text" ? c.text ?? "" : ""))
+          .join("\n");
+        // Scoped to actual `listings` queries (not preferences/snapshots-only
+        // ones) that came back with real rows, so the link-check above only
+        // fires when the agent genuinely had something to point to.
+        if (
+          !result.isError &&
+          /from\s+listings/i.test(String(input.query ?? "")) &&
+          /"id"\s*:/.test(text)
+        ) {
+          sawListingRows = true;
         }
+        results.push({
+          toolResult: {
+            toolUseId: block.toolUse.toolUseId,
+            content: [{ text: text || "(empty result)" }],
+            status: result.isError ? "error" : "success",
+          },
+        });
+      } catch (err) {
+        // A thrown error means the MCP connection itself is broken (not
+        // just a bad query) - drop the cached connection so the next turn
+        // reconnects instead of reusing a dead one.
+        invalidateMcp();
+        results.push({
+          toolResult: {
+            toolUseId: block.toolUse.toolUseId,
+            content: [{ text: `tool error: ${err instanceof Error ? err.message : String(err)}` }],
+            status: "error",
+          },
+        });
       }
-      messages.push({ role: "user", content: results });
     }
-
-    return {
-      reply: "I couldn't finish reasoning about that within my tool budget - try a more specific question.",
-      toolCalls,
-    };
-  } finally {
-    await mcp.close().catch(() => {});
+    messages.push({ role: "user", content: results });
   }
+
+  return {
+    reply: "I couldn't finish reasoning about that within my tool budget - try a more specific question.",
+    toolCalls,
+  };
 }
