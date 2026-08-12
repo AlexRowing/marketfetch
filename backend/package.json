@@ -5,6 +5,8 @@
   "type": "module",
   "description": "MarketFetch agent worker: embeddings, price snapshots, Bedrock+MCP agent loop",
   "scripts": {
+    "seed:clothing": "tsx src/ingestion/seed-clothing.ts",
+    "seed:clothing:reset": "tsx src/ingestion/seed-clothing.ts --reset",
     "embed:backfill": "tsx src/embeddings/backfill-listings.ts",
     "taste:recompute": "tsx src/embeddings/recompute-taste.ts",
     "prices:snapshot": "tsx src/pricing/snapshot.ts",

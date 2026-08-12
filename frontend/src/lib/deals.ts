@@ -120,7 +120,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
 
       // Only trust "vs similar" when the cohort is price-coherent (tight
       // interquartile spread). Otherwise the median is meaningless and cheap
-      // items in a wide-ranging group (a $24 mini pedal among boutique units)
+      // items in a wide-ranging group (a $12 plain tee among designer pieces)
       // look like impossible 80%-off "deals". Same guard as the detail page.
       const median = r.median === null ? null : Number(r.median);
       const p25 = r.p25 === null ? null : Number(r.p25);
@@ -154,7 +154,7 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
       const budget = budgets.get(r.category.toLowerCase());
       let hook: string | null = null;
       if (r.brand && brands.has(r.brand.toLowerCase())) {
-        hook = `${r.brand} is a maker you follow`;
+        hook = `${r.brand} is a brand you follow`;
       } else if (budget !== undefined && price <= budget) {
         hook = `within your ${r.category} budget`;
       }

@@ -52,8 +52,8 @@ export default async function Home() {
             </h1>
             <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-muted">
               {user
-                ? "The agent is watching the used-gear market for you - ranked by your taste, with a read on every price."
-                : "A live look at the used-gear market the agent is tracking. Log in to rank it by your taste."}
+                ? "The agent is watching the marketplace for you - ranked by your taste, with a read on every price."
+                : "A live look at the marketplace the agent is tracking. Log in to rank it by your taste."}
             </p>
           </div>
           <span className="hidden shrink-0 pb-1 font-mono text-xs tracking-tight text-ink-soft sm:block">

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({
       reply:
-        "You're browsing as a guest, so I can't remember your taste or recall your history yet. Log in and I'll track the makers you follow, your saves, and the price history on every listing I've seen. The whole feed is live to browse in the meantime.",
+        "You're browsing as a guest, so I can't remember your taste or recall your history yet. Log in and I'll track the brands you follow, your saves, and the price history on every listing I've seen. The whole feed is live to browse in the meantime.",
       toolCalls: [],
     });
   }

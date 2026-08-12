@@ -39,7 +39,7 @@ export function DailyBriefing({
       : null;
   const oppClause =
     opportunities > 0
-      ? `${opportunities} ${opportunities === 1 ? "is" : "are"} sitting below what comparable gear sells for`
+      ? `${opportunities} ${opportunities === 1 ? "is" : "are"} sitting below what comparable pieces sell for`
       : null;
 
   let summary: string;
