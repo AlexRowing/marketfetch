@@ -2,7 +2,6 @@ import { FeedGrid } from "@/components/listings/FeedGrid";
 import { DailyBriefing } from "@/components/listings/DailyBriefing";
 import { DealsBrief } from "@/components/listings/DealsBrief";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { PrimaryNav } from "@/components/ui/PrimaryNav";
 import { GuestBanner } from "@/components/ui/GuestBanner";
 import {
   countFeedListings,
@@ -34,9 +33,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col bg-canvas font-sans">
-      <PageHeader maxWidth="max-w-5xl" user={user}>
-        <PrimaryNav />
-      </PageHeader>
+      <PageHeader maxWidth="max-w-5xl" user={user} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
         <header className="mb-9 flex items-end justify-between gap-6 border-b border-line pb-6">
           <div className="animate-rise">

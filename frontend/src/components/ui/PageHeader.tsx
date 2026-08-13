@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { PrimaryNav } from "@/components/ui/PrimaryNav";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/ui/UserMenu";
 import type { SessionUser } from "@/lib/auth";
@@ -27,7 +28,10 @@ export function PageHeader({
       <div
         className={`mx-auto flex w-full ${maxWidth} items-center justify-between px-6 py-3.5`}
       >
-        <BrandMark />
+        <div className="flex items-center gap-5">
+          <BrandMark />
+          <PrimaryNav />
+        </div>
         <div className="flex items-center gap-3">
           {children}
           <ThemeToggle />
