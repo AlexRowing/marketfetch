@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import { PriceHistoryChart } from "@/components/listings/PriceHistoryChart";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { SourceBadgeLarge } from "@/components/listings/SourceBadge";
+import { SaveToggleButton } from "@/components/listings/SaveToggleButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
   ArrowUpRightIcon,
-  HeartIcon,
   TrendDownIcon,
   TrendUpIcon,
 } from "@/components/ui/icons";
@@ -60,15 +60,7 @@ export default async function ListingPage({
   return (
     <div className="flex flex-1 flex-col bg-canvas font-sans">
       <PageHeader user={user}>
-        {listing.isSaved && (
-          <span
-            title="Saved"
-            className="flex items-center gap-1.5 text-sm font-medium text-ink-muted"
-          >
-            <HeartIcon filled className="h-4 w-4 text-brand-600" />
-            Saved
-          </span>
-        )}
+        <SaveToggleButton listingId={listing.id} initialSaved={listing.isSaved} />
       </PageHeader>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">

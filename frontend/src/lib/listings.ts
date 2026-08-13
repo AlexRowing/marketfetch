@@ -475,6 +475,66 @@ export async function countFeedListings(
   return Number(rows[0]?.total ?? 0);
 }
 
+/**
+ * A user's saved listings, most recently saved first - so they can keep an
+ * eye on price without re-searching. Includes sold listings (the point is
+ * tracking something you cared about, even after it's gone); excludes
+ * anything since unsaved.
+ */
+export async function getSavedListings(userId: string): Promise<FeedItem[]> {
+  const rows = await query<FeedRow>(
+    `SELECT l.id, l.title, l.brand, l.category, l.size, l.color, l.condition,
+            l.image_url, l.source, l.url, l.current_price, l.currency, l.is_active, l.is_synthetic,
+            extract(day FROM now() - COALESCE(l.listed_at, l.first_seen_at))::INT AS listing_age_days,
+            fp.first_price,
+            s.kind AS save_state,
+            sm.sim_median, sm.sim_p25, sm.sim_p75, sm.sim_n,
+            pc.price_cuts
+     FROM listings l
+     -- Latest save/unsave for this user+listing; filtered to 'save' below so
+     -- an item that was later unsaved drops out.
+     JOIN LATERAL (
+       SELECT kind, created_at
+       FROM interactions
+       WHERE user_id = $1 AND listing_id = l.id AND kind IN ('save', 'unsave')
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) s ON true
+     LEFT JOIN LATERAL (
+       SELECT price AS first_price
+       FROM price_snapshots
+       WHERE listing_id = l.id
+       ORDER BY captured_at ASC
+       LIMIT 1
+     ) fp ON true
+     LEFT JOIN LATERAL (
+       SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY o.price) AS sim_median,
+              percentile_cont(0.25) WITHIN GROUP (ORDER BY o.price) AS sim_p25,
+              percentile_cont(0.75) WITHIN GROUP (ORDER BY o.price) AS sim_p75,
+              count(*)::INT AS sim_n
+       FROM (
+         SELECT comp.current_price::FLOAT8 AS price
+         FROM listings comp
+         WHERE comp.id <> l.id AND comp.source <> 'seed'
+           AND (comp.embedding <=> l.embedding) < 0.5
+         ORDER BY comp.embedding <=> l.embedding ASC
+         LIMIT 15
+       ) o
+     ) sm ON true
+     LEFT JOIN LATERAL (
+       SELECT count(*) FILTER (WHERE h.price < h.prev)::INT AS price_cuts
+       FROM (
+         SELECT price, lag(price) OVER (ORDER BY captured_at) AS prev
+         FROM price_snapshots WHERE listing_id = l.id
+       ) h
+     ) pc ON true
+     WHERE s.kind = 'save' AND l.source <> 'seed'
+     ORDER BY s.created_at DESC`,
+    [userId]
+  );
+  return rows.map(mapFeedRow);
+}
+
 /** Distinct categories across the user's feed-eligible listings. */
 export async function getFeedCategories(userId: string): Promise<string[]> {
   const rows = await query<{ category: string }>(

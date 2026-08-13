@@ -21,7 +21,8 @@ export function ListingCard({
 }: {
   item: FeedItem;
   onToggleSave: (item: FeedItem) => void;
-  onReject: (item: FeedItem) => void;
+  /** Omit to hide the "Not interested" control (e.g. on the Saved page). */
+  onReject?: (item: FeedItem) => void;
 }) {
   // Drives the one-shot pop when the user saves (not on initial render).
   const [popping, setPopping] = useState(false);
@@ -104,15 +105,17 @@ export function ListingCard({
                 } ${popping ? "animate-heart-pop" : ""}`}
               />
             </button>
-            <button
-              type="button"
-              aria-label="Not interested"
-              title="Not interested"
-              onClick={() => onReject(item)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/85 text-ink-muted opacity-0 shadow-sm ring-1 ring-line backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-surface hover:text-ink focus-visible:opacity-100 active:scale-95 group-hover:opacity-100 max-sm:opacity-100"
-            >
-              <CloseIcon className="h-[18px] w-[18px]" />
-            </button>
+            {onReject && (
+              <button
+                type="button"
+                aria-label="Not interested"
+                title="Not interested"
+                onClick={() => onReject(item)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/85 text-ink-muted opacity-0 shadow-sm ring-1 ring-line backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-surface hover:text-ink focus-visible:opacity-100 active:scale-95 group-hover:opacity-100 max-sm:opacity-100"
+              >
+                <CloseIcon className="h-[18px] w-[18px]" />
+              </button>
+            )}
           </div>
         )}
       </div>
