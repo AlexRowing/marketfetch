@@ -35,10 +35,13 @@ const savePreferenceTool: Tool = {
       "Persist a lasting buyer preference to the user's saved Preferences. " +
       "This is the ONLY correct way to remember a preference - it writes to the " +
       "same store the Preferences page uses, so it also re-ranks the user's feed. " +
-      "Call it whenever the user states something durable they want remembered: a " +
-      "brand they like (Carhartt, Nike, Levi's), a colour, a clothing/shoe size, " +
-      "or a per-category spending budget (e.g. a ceiling for jackets). " +
-      "Do not use it for one-off search filters.",
+      "Call it for ANY durable signal you recognize, even mentioned casually in " +
+      "passing rather than as an explicit 'remember this' request: a brand they " +
+      "like or wear (Carhartt, Nike, Levi's), a colour, a clothing/shoe size, or a " +
+      "per-category spending budget (e.g. a ceiling for jackets). Err toward " +
+      "saving when something sounds like it describes the user generally rather " +
+      "than just this question. Do not use it for one-off search filters clearly " +
+      "scoped to a single ask (e.g. 'show me something under $20 as a gift').",
     inputSchema: {
       json: {
         type: "object",
@@ -194,10 +197,13 @@ Grounding rules - never break these:
 - Only ever name or link a listing that came back from a query in THIS turn.
   Never guess or reuse an id, and never invent listings or prices. If memory has
   no answer, say so plainly instead of making something up.
-- When the user states a lasting preference (a brand, size, colour, or a
-  per-category budget), call the save_preference tool to remember it - never
-  write it with raw SQL. Saving this way also re-ranks their feed. Then confirm
-  in one short line what you saved.
+- Recognize a lasting preference (a brand, size, colour, or a per-category
+  budget) wherever it comes up - not only when the user explicitly asks you to
+  remember it, but also when it's mentioned in passing while asking about
+  something else. Call save_preference to save it - never write it with raw
+  SQL. Saving this way also re-ranks their feed. Then confirm in one short
+  line what you saved. Skip it only for a filter that's clearly scoped to
+  this one question, not the user in general.
 - Finish the job before replying: run every query you need first. Never end your
   reply with "let me search/check" - the reply IS the final answer.`;
 
