@@ -67,6 +67,13 @@
   --color-brand-800: #1a2c96;
 }
 
+/* Always reserve the scrollbar's space so centered content (the header bar,
+   page columns) sits at the same x on every route - short pages and long
+   scrolling pages line up pixel-for-pixel instead of jumping by ~8px. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

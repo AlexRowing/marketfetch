@@ -11,9 +11,7 @@ export default async function PrivacyPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-canvas font-sans">
-      <PageHeader user={user}>
-        <span className="text-sm font-medium text-ink-muted">Privacy Policy</span>
-      </PageHeader>
+      <PageHeader user={user} />
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
         <header className="mb-8 border-b border-line pb-6">
           <h1 className="font-serif text-[2.25rem] font-semibold leading-[1.05] tracking-tight text-balance text-ink sm:text-[2.75rem]">
