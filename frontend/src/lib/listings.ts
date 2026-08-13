@@ -334,13 +334,15 @@ async function queryFeed(
   offset: number,
   limit: number | null
 ): Promise<FeedItem[]> {
-  // Active = preference-then-taste-ranked discovery (items matching the user's
-  // saved Preferences float to the top, ties broken by taste); sold =
-  // recently-sold-first research view.
+  // Real listings (Reverb/Discogs) always float above the generated demo
+  // clothing catalog, regardless of taste/preference match. Active = within
+  // each tier, preference-then-taste-ranked (items matching the user's saved
+  // Preferences float to the top, ties broken by taste); sold = within each
+  // tier, recently-sold-first research view.
   const orderBy =
     status === "active"
-      ? "pref_boost DESC, taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id"
-      : "l.last_seen_at DESC, l.id";
+      ? "l.is_synthetic ASC, pref_boost DESC, taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id"
+      : "l.is_synthetic ASC, l.last_seen_at DESC, l.id";
   const rows = await query<FeedRow>(
     `SELECT l.id, l.title, l.brand, l.category, l.size, l.color, l.condition,
             l.image_url, l.source, l.url, l.current_price, l.currency, l.is_active, l.is_synthetic,

@@ -82,7 +82,9 @@ export async function getDealsForUser(userId: string): Promise<Deal[]> {
              SELECT 1 FROM interactions r
              WHERE r.user_id = $1 AND r.listing_id = l.id AND r.kind = 'reject'
            )
-         ORDER BY taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id
+         -- Real listings (Reverb/Discogs) fill the candidate pool before any
+         -- generated demo clothing gets a look, same as the main feed.
+         ORDER BY l.is_synthetic ASC, taste_distance ASC NULLS LAST, l.first_seen_at DESC, l.id
          LIMIT ${CANDIDATES}
        )
        SELECT c.id, c.title, c.brand, c.category, c.size, c.condition,
