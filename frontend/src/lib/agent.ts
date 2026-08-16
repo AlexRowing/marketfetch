@@ -17,6 +17,17 @@ const MAX_TOOL_ROUNDS = 10;
 // A reply that mentions specific listings but links none of them - matched
 // against /listings/<id> since that's the only path the agent ever emits.
 const LISTING_LINK_RE = /\/listings\/[0-9a-f-]{8,}/i;
+// Every /listings/<id> in a reply, for validating each one individually
+// (loose id capture - deliberately permissive so malformed ids still match
+// and get caught by the strict check below, instead of slipping past unseen).
+const LISTING_HREF_RE = /\/listings\/([0-9a-f-]+)/gi;
+// A real UUID is exactly 8-4-4-4-12 hex characters. Claude occasionally drops
+// a hyphen while retyping a long id inside a markdown link (the id itself was
+// right, just malformed in the rendering) - this catches that shape error.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Any UUID that appeared anywhere in a successful tool result this turn -
+// the set of ids the agent is actually allowed to link to.
+const ANY_UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 /**
  * A first-class tool for persisting a buyer preference, handled by us directly
@@ -201,7 +212,9 @@ Grounding rules - never break these:
   "this dropped from $75 to $58 across its snapshots").
 - Whenever you mention a specific listing, ALWAYS make it a clickable Markdown
   link to its in-app page, [short title](/listings/<id>), using the id column -
-  so SELECT l.id in your queries. Never emit a bare "view" or "here".
+  so SELECT l.id in your queries. Never emit a bare "view" or "here". An id is
+  exactly 8-4-4-4-12 hex characters - copy it character-for-character from the
+  query result, don't retype it from memory; a dropped hyphen breaks the link.
 - Only ever name or link a listing that came back from a query in THIS turn.
   Never guess or reuse an id, and never invent listings or prices. If memory has
   no answer, say so plainly instead of making something up.
@@ -233,6 +246,11 @@ export async function runAgent(
   // no-listing-needed replies ("what's my budget?").
   let sawListingRows = false;
   let correctionAttempted = false;
+  // Every listing id that has actually appeared in a successful tool result
+  // this turn - used to catch a linked id that's malformed or was never
+  // actually returned by a query (see the Daft Punk Remixes One bug: the
+  // model had the right id but dropped a hyphen while writing the link).
+  const knownListingIds = new Set<string>();
 
   const { client: mcp, tools: mcpTools } = await getMcp();
 
@@ -284,21 +302,29 @@ export async function runAgent(
         .map((block) => block.text ?? "")
         .join("")
         .trim();
+
+      // A linked id that's malformed (wrong UUID shape - e.g. a dropped
+      // hyphen) or that never actually appeared in a query result this turn.
+      const badLink = [...reply.matchAll(LISTING_HREF_RE)]
+        .map((m) => m[1])
+        .find((id) => !UUID_RE.test(id) || !knownListingIds.has(id.toLowerCase()));
+
       if (
-        sawListingRows &&
         !correctionAttempted &&
-        !LISTING_LINK_RE.test(reply) &&
-        round < MAX_TOOL_ROUNDS
+        round < MAX_TOOL_ROUNDS &&
+        (badLink || (sawListingRows && !LISTING_LINK_RE.test(reply)))
       ) {
-        // The agent had real listings to point to this turn and didn't link
-        // any of them - the exact bug we saw in production. One bounded
-        // corrective round instead of trusting the prompt alone.
+        // One bounded corrective round instead of trusting the prompt alone -
+        // either the agent had real listings and linked none of them, or one
+        // of its links doesn't match a real id from this turn's queries.
         correctionAttempted = true;
         messages.push({
           role: "user",
           content: [
             {
-              text: "You looked up real listings this turn but your reply doesn't link to any of them. Rewrite your answer so every specific listing you mention is a real [title](/listings/<id>) markdown link, using an id from your query results above. If your reply genuinely names no specific listing (e.g. you're only answering a general question), you can repeat it as-is.",
+              text: badLink
+                ? `The link /listings/${badLink} is broken - it doesn't match a real id from your query results this turn (a UUID is exactly 8-4-4-4-12 hex characters). Rewrite your answer, copying each id character-for-character from your query results rather than retyping it. If you're not sure of an id anymore, re-run the query first.`
+                : "You looked up real listings this turn but your reply doesn't link to any of them. Rewrite your answer so every specific listing you mention is a real [title](/listings/<id>) markdown link, using an id from your query results above. If your reply genuinely names no specific listing (e.g. you're only answering a general question), you can repeat it as-is.",
             },
           ],
         });
@@ -341,6 +367,11 @@ export async function runAgent(
           /"id"\s*:/.test(text)
         ) {
           sawListingRows = true;
+        }
+        if (!result.isError) {
+          for (const id of text.match(ANY_UUID_RE) ?? []) {
+            knownListingIds.add(id.toLowerCase());
+          }
         }
         results.push({
           toolResult: {
